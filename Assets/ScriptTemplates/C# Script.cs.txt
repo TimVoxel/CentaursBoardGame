@@ -1,0 +1,11 @@
+using UnityEngine;
+
+#nullable enable
+
+namespace CentaursBoardGame
+{
+	public class #SCRIPTNAME# : MonoBehaviour
+	{
+
+	}
+}

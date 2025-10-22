@@ -3,70 +3,67 @@ using UnityEngine;
 
 #nullable enable
 
-namespace CentaursBoardGame
+[System.Serializable]
+public struct BoardAttackIconInfo
 {
-    [System.Serializable]
-    public struct BoardAttackIconInfo
-    {
-        [SerializeField] private BoardAttackType _representedAttackType;
-        [SerializeField] private Sprite _sprite;
-        [SerializeField] private string _name;
-        [SerializeField] private string _explanation;
+    [SerializeField] private BoardAttackType _representedAttackType;
+    [SerializeField] private Sprite _sprite;
+    [SerializeField] private string _name;
+    [SerializeField] private string _explanation;
         
-        public BoardAttackType RepresentedAttackType => _representedAttackType;
-        public Sprite Sprite => _sprite;
-        public string Name => _name;
-        public string Explanation => _explanation;
+    public BoardAttackType RepresentedAttackType => _representedAttackType;
+    public Sprite Sprite => _sprite;
+    public string Name => _name;
+    public string Explanation => _explanation;
 
-        public BoardAttackIconInfo(BoardAttackType representedAttackType,
-                                   Sprite sprite,
-                                   string name,
-                                   string description)
+    public BoardAttackIconInfo(BoardAttackType representedAttackType,
+                                Sprite sprite,
+                                string name,
+                                string description)
+    {
+        _representedAttackType = representedAttackType;
+        _sprite = sprite;
+        _name = name;
+        _explanation = description;
+    }
+
+    public static string? GetDetails(BoardAttack attack)
+    {
+        //Could do this with polymorphism but I don't feel like making a separate info for every type of attack
+
+        switch (attack)
         {
-            _representedAttackType = representedAttackType;
-            _sprite = sprite;
-            _name = name;
-            _explanation = description;
-        }
+            case AttackCentreEntrancesAttack attackCentreEntrancesAttack:
+                return "Centre entrances are attacked!";
 
-        public static string? GetDetails(BoardAttack attack)
-        {
-            //Could do this with polymorphism but I don't feel like making a separate info for every type of attack
+            case AttackRingAttack attackRingAttack:
+                return $"{attackRingAttack.Ring} ring is attacked!";
 
-            switch (attack)
-            {
-                case AttackCentreEntrancesAttack attackCentreEntrancesAttack:
-                    return "Centre entrances are attacked!";
+            case RotateRingAttack rotateRingAttack:
+                return $"{rotateRingAttack.Ring} ring is rotated {rotateRingAttack.SectorCount} sectors!";
 
-                case AttackRingAttack attackRingAttack:
-                    return $"{attackRingAttack.Ring} ring is attacked!";
+            case ShuffleRingsAttack shuffleRingsAttack:
+                var stringBuilder = new StringBuilder();
 
-                case RotateRingAttack rotateRingAttack:
-                    return $"{rotateRingAttack.Ring} ring is rotated {rotateRingAttack.SectorCount} sectors!";
-
-                case ShuffleRingsAttack shuffleRingsAttack:
-                    var stringBuilder = new StringBuilder();
-
-                    stringBuilder.AppendLine("Crazy shuffle!");
+                stringBuilder.AppendLine("Crazy shuffle!");
                     
-                    foreach (var rotation in shuffleRingsAttack.Rotations)
-                    {
-                        stringBuilder.AppendLine($"{rotation.Ring} ring is rotated {rotation.SectorCount} sectors!");
-                    }
+                foreach (var rotation in shuffleRingsAttack.Rotations)
+                {
+                    stringBuilder.AppendLine($"{rotation.Ring} ring is rotated {rotation.SectorCount} sectors!");
+                }
 
-                    return stringBuilder.ToString();
+                return stringBuilder.ToString();
 
-                case ForceDiscardCardsAmount forceDiscardCardsAmount:
-                    return forceDiscardCardsAmount.CardCount == 1
-                        ? "Every player discards a card!"
-                        : $"Every player discards {forceDiscardCardsAmount.CardCount} cards!";
+            case ForceDiscardCardsAmount forceDiscardCardsAmount:
+                return forceDiscardCardsAmount.CardCount == 1
+                    ? "Every player discards a card!"
+                    : $"Every player discards {forceDiscardCardsAmount.CardCount} cards!";
 
-                case ForceSwapHandsAttack forceSwapHandsAttack:
-                    return $"Player {forceSwapHandsAttack.First.Name} swaps hands with player {forceSwapHandsAttack.Second.Name}";
+            case ForceSwapHandsAttack forceSwapHandsAttack:
+                return $"Player {forceSwapHandsAttack.First.Name} swaps hands with player {forceSwapHandsAttack.Second.Name}";
 
-                default:
-                    throw new System.Exception($"Unexpected attack type: {attack.GetType()}");
-            }
+            default:
+                throw new System.Exception($"Unexpected attack type: {attack.GetType()}");
         }
     }
 }

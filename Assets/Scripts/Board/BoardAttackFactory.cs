@@ -4,6 +4,10 @@ public class BoardAttackFactory
 {
     private GameContext _gameContext;
 
+    //We're not including the actual sector count because that would result in a full rotation
+    //Which will just do nothing gameplay-wise
+    private byte RandomSectorCount => (byte)UnityEngine.Random.Range(1, _gameContext.BoardSectorCount);
+
     public BoardAttackFactory(GameContext gameContext)
     {
         _gameContext = gameContext;
@@ -33,20 +37,14 @@ public class BoardAttackFactory
         };
     }
     private AttackRingAttack CreateAttackRing()
-    {
-        var ring = GameFacts.GetRandomBoardRing();
-        return new AttackRingAttack(ring);
-    }
-
+        => new AttackRingAttack(GameFacts.GetRandomBoardRing());
     private AttackCentreEntrancesAttack CreateAttackCentreEntrances()
-    {
-        return new AttackCentreEntrancesAttack();
-    }
-
+        => new AttackCentreEntrancesAttack();
+   
     private ForceDiscardCardsAmount CreateForceDiscardCards()
     {
-        var sectorCount = (byte)UnityEngine.Random.Range(1, GameFacts.MaxDiscardCardsAmount + 1);
-        return new ForceDiscardCardsAmount(sectorCount);
+        var cardCount = (byte)UnityEngine.Random.Range(1, GameFacts.MaxDiscardCardsAmount + 1);
+        return new ForceDiscardCardsAmount(cardCount);
     }
 
     private ForceSwapHandsAttack CreateForceSwapHands()
@@ -70,18 +68,11 @@ public class BoardAttackFactory
     }
 
     private RotateRingAttack CreateRotateRing()
-    {
-        var ring = GameFacts.GetRandomRotatableRing();
-        var sectorCount = (byte)UnityEngine.Random.Range(0, _gameContext.BoardSectorCount);
-        return new RotateRingAttack(ring, sectorCount);
-    }
-
+        => new RotateRingAttack(GameFacts.GetRandomRotatableRing(), RandomSectorCount);
+    
     private ShuffleRingsAttack CreateShuffleRings()
-    {
-        var sectorCountInner = (byte)UnityEngine.Random.Range(0, _gameContext.BoardSectorCount);
-        var sectorCountMiddle = (byte)UnityEngine.Random.Range(0, _gameContext.BoardSectorCount);
-        return new ShuffleRingsAttack(
-            (BoardRing.Inner, sectorCountInner),
-            (BoardRing.Middle, sectorCountMiddle));
-    }
+        => new ShuffleRingsAttack(
+            (BoardRing.Inner, RandomSectorCount),
+            (BoardRing.Middle, RandomSectorCount));
+
 }

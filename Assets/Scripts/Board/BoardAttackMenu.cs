@@ -1,13 +1,63 @@
 using UnityEngine;
+using UnityEngine.Events;
 
 #nullable enable
 
 public class BoardAttackMenu : MonoBehaviour
 {
     [SerializeField] private Game _game;
+    [SerializeField] private GameObject _confirmPanel;
 
-    public void OnAttackClicked()
+    [SerializeField] private UnityEvent<BoardAttack>? _onBoardAttacked;
+
+    private void Awake()
+    {
+        _confirmPanel.SetActive(false);
+    }
+
+    private void OnEnable()
+    {
+        _game.BoardAttackController.OnBoardAttacked += OnBoardAttacked;
+    }
+
+    private void OnDisable()
+    {
+        _game.BoardAttackController.OnBoardAttacked -= OnBoardAttacked;
+    }
+
+    public void OnPerformAttackClicked()
+    {
+        if (_game.State == GameState.AwaitingPlayerInput)
+        {
+            ShowConfirmPanel();
+        }
+    }
+
+    public void OnGoBackClicked()
+    {
+        if (_game.State == GameState.ShowingBoardAttack)
+        {
+            _game.EnterAwaitingInputState();
+        }
+    }
+
+    public void ShowConfirmPanel()
+    {
+        _confirmPanel.SetActive(true);
+    }
+
+    public void HideConfirmPanel()
+    {
+        _confirmPanel.SetActive(false);
+    }
+
+    public void OnAttackConfirmed()
     {
         _game.BoardAttackController.PerformNextAttack();
+    }
+
+    private void OnBoardAttacked(BoardAttack attack)
+    {
+        _onBoardAttacked?.Invoke(attack);
     }
 }

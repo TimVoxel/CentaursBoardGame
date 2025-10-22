@@ -2,8 +2,8 @@ using System;
 
 public static class GameFacts
 {
-    private static readonly BoardRing[] BoardRingValues = (BoardRing[]) Enum.GetValues(typeof(BoardRing));
-    private static readonly BoardAttackType[] BoardAttackTypeValues = (BoardAttackType[]) Enum.GetValues(typeof(BoardAttackType));
+    public static readonly BoardRing[] BoardRingValues = (BoardRing[]) Enum.GetValues(typeof(BoardRing));
+    public static readonly BoardAttackType[] BoardAttackTypeValues = (BoardAttackType[]) Enum.GetValues(typeof(BoardAttackType));
 
     public const int BoardSectorCount = 24;
     public const int MaxDiscardCardsAmount = 2;

@@ -1,25 +1,60 @@
 using System;
 using System.IO;
+using System.Linq;
 using UnityEngine;
+using UnityEngine.Events;
 
 #nullable enable
+
+public enum GameState : byte
+{ 
+    AwaitingPlayerInput,
+    ShowingBoardAttack,
+    AwaitingBoardCallback,
+    TransitionAnimation
+}
 
 public class Game : MonoBehaviour
 {
     [SerializeField] private InterfaceReference<IBoardHandler> _boardHandler;
-    [SerializeField] private GameContextBuilder _gameContext;
+    [SerializeField] private GameContextBuilder _gameContextBuilder;
     
     private BoardAttackController _boardAttackController;
+    private GameContext _context;
+    private GameState _state;
+
+    [SerializeField] private UnityEvent<BoardAttack> _onShowAttack;
+    [SerializeField] private UnityEvent _onHideAttack;
+
+    public GameState State
+    {
+        get => _state;
+        set
+        {
+            if (_state != value)
+            {
+                _state = value;
+                GameStateChanged?.Invoke(_state);
+            }
+        }
+    }
 
     public IBoardHandler BoardHandler => _boardHandler.Value ?? throw new NullReferenceException("The board handler was not assigned in the game script");
     public BoardAttackController BoardAttackController => _boardAttackController;
+
+    public event Action<GameState>? GameStateChanged;
 
     private void Awake()
     {
         Debug.Assert(_boardHandler != null, "Board handler not assigned, cannot start game");
 
-        var gameContext = _gameContext.ToContext();
-        _boardAttackController = new BoardAttackController(gameContext);
+        _context = _gameContextBuilder.ToContext();
+        _boardAttackController = new BoardAttackController(_context);
+    }
+
+    private void Start()
+    {
+        State = GameState.AwaitingPlayerInput;
     }
 
     private void OnEnable()
@@ -30,6 +65,19 @@ public class Game : MonoBehaviour
     private void OnDisable()
     {
         _boardAttackController.OnBoardAttacked -= LogBoardAttack;
+    }
+
+    public void EnterShowAttackState()
+    {
+        var attack = _context.AttackHistory.Last();
+        _onShowAttack?.Invoke(attack);
+        State = GameState.ShowingBoardAttack;
+    }
+
+    public void EnterAwaitingInputState()
+    {
+        _onHideAttack?.Invoke();
+        State = GameState.AwaitingPlayerInput;
     }
 
     public void LogBoardAttack(BoardAttack attack)

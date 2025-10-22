@@ -1,12 +1,15 @@
 using System;
+using System.Collections.Generic;
+
+#nullable enable
 
 public interface IBoardHandler
 {
-    public void RotateRings(params (byte ring, byte sectorCount)[] rings);
-    public void StopRings(params byte[] rings);
+    public void RotateRings(IList<BoardRotation> rotations);
+    public void StopRings(IList<BoardRing> rings);
     public void StopAllRings();
 
     public bool IsConnected();
 
-    public event Action OnStoppedRotating;
+    public event Action<ArduinoResponse>? OnReceivedResponse;
 }

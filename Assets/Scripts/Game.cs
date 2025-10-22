@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEngine;
@@ -18,7 +19,7 @@ public class Game : MonoBehaviour
 {
     [SerializeField] private InterfaceReference<IBoardHandler> _boardHandler;
     [SerializeField] private GameContextBuilder _gameContextBuilder;
-    
+
     private BoardAttackController _boardAttackController;
     private GameContext _context;
     private GameState _state;
@@ -78,6 +79,25 @@ public class Game : MonoBehaviour
     {
         _onHideAttack?.Invoke();
         State = GameState.AwaitingPlayerInput;
+    }
+
+    public void TrySendAttackToBoard(BoardAttack attack)
+    {
+        switch (attack)
+        {
+            case RotateRingAttack rotateRingAttack:
+
+                var list = new List<BoardRotation>(1) { new BoardRotation(rotateRingAttack.Ring, rotateRingAttack.SectorCount) };
+                BoardHandler.RotateRings(list);
+                break;
+
+            case ShuffleRingsAttack shuffleRingsAttack:
+                BoardHandler.RotateRings(shuffleRingsAttack.Rotations);
+                break;
+
+            default:
+                break;
+        }
     }
 
     public void LogBoardAttack(BoardAttack attack)

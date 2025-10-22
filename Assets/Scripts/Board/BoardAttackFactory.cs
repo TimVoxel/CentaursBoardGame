@@ -72,7 +72,7 @@ public class BoardAttackFactory
     
     private ShuffleRingsAttack CreateShuffleRings()
         => new ShuffleRingsAttack(
-            (BoardRing.Inner, RandomSectorCount),
-            (BoardRing.Middle, RandomSectorCount));
+            new BoardRotation(BoardRing.Inner, RandomSectorCount),
+            new BoardRotation(BoardRing.Middle, RandomSectorCount));
 
 }

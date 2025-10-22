@@ -1,3 +1,5 @@
+using CentaursBoardGame;
+using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -7,6 +9,7 @@ public class BoardAttackMenu : MonoBehaviour
 {
     [SerializeField] private Game _game;
     [SerializeField] private GameObject _confirmPanel;
+    [SerializeField] private ArduinoCommunicationDisplay _arduinoCommunicationDisplay;
 
     [SerializeField] private UnityEvent<BoardAttack>? _onBoardAttacked;
 
@@ -18,11 +21,13 @@ public class BoardAttackMenu : MonoBehaviour
     private void OnEnable()
     {
         _game.BoardAttackController.OnBoardAttacked += OnBoardAttacked;
+        _game.BoardHandler.OnReceivedResponse += ShowArduinoResponseOnDisplay;
     }
 
     private void OnDisable()
     {
         _game.BoardAttackController.OnBoardAttacked -= OnBoardAttacked;
+        _game.BoardHandler.OnReceivedResponse -= ShowArduinoResponseOnDisplay;
     }
 
     public void OnPerformAttackClicked()
@@ -59,5 +64,10 @@ public class BoardAttackMenu : MonoBehaviour
     private void OnBoardAttacked(BoardAttack attack)
     {
         _onBoardAttacked?.Invoke(attack);
+    }
+
+    private void ShowArduinoResponseOnDisplay(ArduinoResponse response)
+    {
+        _arduinoCommunicationDisplay.ShowResponse(response);
     }
 }

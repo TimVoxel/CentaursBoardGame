@@ -4,6 +4,11 @@ public static class GameFacts
 {
     public static readonly BoardRing[] BoardRingValues = (BoardRing[]) Enum.GetValues(typeof(BoardRing));
     public static readonly BoardAttackType[] BoardAttackTypeValues = (BoardAttackType[]) Enum.GetValues(typeof(BoardAttackType));
+    public static readonly BoardRing[] RotatableRings = new BoardRing[2] 
+    {
+        BoardRing.Middle,
+        BoardRing.Inner
+    };
 
     public const int BoardSectorCount = 24;
     public const int MaxDiscardCardsAmount = 2;
@@ -15,9 +20,10 @@ public static class GameFacts
     }
 
     public static BoardRing GetRandomRotatableRing()
-        => UnityEngine.Random.Range(0, 2) == 0
-            ? BoardRing.Inner
-            : BoardRing.Middle;
+    {
+        var index = UnityEngine.Random.Range(0, RotatableRings.Length);
+        return RotatableRings[index];
+    }
 
     public static BoardAttackType GetRandomBoardAttackType()
     {

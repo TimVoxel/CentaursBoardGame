@@ -11,7 +11,7 @@ public static class BoardAttackExtensions
                 writer.WriteLine("Rings and sectors:");
                 foreach (var kvp in shuffleAttack.Rotations)
                 {
-                    writer.WriteLine($"  Ring: {kvp.Key}, Sector Count: {kvp.Value}");
+                    writer.WriteLine($"  Ring: {kvp.Ring}, Sector Count: {kvp.SectorCount}");
                 }
                 break;
 

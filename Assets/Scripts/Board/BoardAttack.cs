@@ -1,33 +1,26 @@
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using UnityEngine;
 
 #nullable enable
 
 public class ShuffleRingsAttack : BoardAttack
 {
-    private readonly ImmutableDictionary<BoardRing, byte> _ringToSectors;
+    private readonly IList<BoardRotation> _ringToSectors;
 
     public override BoardAttackType Type => BoardAttackType.ShuffleRings;
 
-    public IDictionary<BoardRing, byte> Rotations => _ringToSectors;
+    public IList<BoardRotation> Rotations => _ringToSectors;
 
-    public ShuffleRingsAttack(params (BoardRing ring, byte sectorCount)[] rotations)
+    public ShuffleRingsAttack(IList<BoardRotation> rotations)
     {
-        Debug.Assert(rotations.Length > 0);
-        var builder = ImmutableDictionary.CreateBuilder<BoardRing, byte>();
-
-        foreach (var rotation in rotations)
-        {
-            builder.Add(rotation.ring, rotation.sectorCount);
-        }
-
-        _ringToSectors = builder.ToImmutable();
+        Debug.Assert(rotations.Count > 0);
+        _ringToSectors = rotations;
     }
 
-    public byte this[BoardRing ring]
+    public ShuffleRingsAttack(params BoardRotation[] rotations)
     {
-        get => _ringToSectors[ring];
+        Debug.Assert(rotations.Length > 0);
+        _ringToSectors = rotations;
     }
 }
 

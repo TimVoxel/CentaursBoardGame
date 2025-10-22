@@ -51,7 +51,7 @@ namespace CentaursBoardGame
                     
                     foreach (var rotation in shuffleRingsAttack.Rotations)
                     {
-                        stringBuilder.AppendLine($"{rotation.Key} ring is rotated {rotation.Value} sectors!");
+                        stringBuilder.AppendLine($"{rotation.Ring} ring is rotated {rotation.SectorCount} sectors!");
                     }
 
                     return stringBuilder.ToString();

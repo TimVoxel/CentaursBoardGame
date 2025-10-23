@@ -9,7 +9,5 @@ public interface IBoardHandler
     public void StopRings(IList<BoardRing> rings);
     public void StopAllRings();
 
-    public bool IsConnected();
-
     public event Action<ArduinoResponse>? OnReceivedResponse;
 }

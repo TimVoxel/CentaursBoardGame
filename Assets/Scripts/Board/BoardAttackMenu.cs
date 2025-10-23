@@ -21,13 +21,11 @@ public class BoardAttackMenu : MonoBehaviour
     private void OnEnable()
     {
         _game.BoardAttackController.OnBoardAttacked += OnBoardAttacked;
-        _game.BoardHandler.OnReceivedResponse += ShowArduinoResponseOnDisplay;
     }
 
     private void OnDisable()
     {
         _game.BoardAttackController.OnBoardAttacked -= OnBoardAttacked;
-        _game.BoardHandler.OnReceivedResponse -= ShowArduinoResponseOnDisplay;
     }
 
     public void OnPerformAttackClicked()

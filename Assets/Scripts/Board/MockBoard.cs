@@ -12,7 +12,6 @@ public class MockBoard : MonoBehaviour, IBoardHandler
 {
     //Mock class used to test without connecting the arduino circuit
     [SerializeField] private float _responseTimeSeconds;
-    [SerializeField] private bool _mockConnected;
     [SerializeField] private TextMeshProUGUI _encodedRequestText;
     [SerializeField] private ArduinoResponse _mockResponse;
 
@@ -38,9 +37,6 @@ public class MockBoard : MonoBehaviour, IBoardHandler
         OnReceivedResponse -= ForwardResponseToUnityEvent;
     }
 
-    public bool IsConnected()
-        => _mockConnected;
-
     public void RotateRings(IList<BoardRotation> rings)
     {
         LogAndSendRequest(new ArduinoRotateRequest(rings));
@@ -64,8 +60,8 @@ public class MockBoard : MonoBehaviour, IBoardHandler
 
     private void LogAndSendRequest(IArduinoRequest request)
     {
-        var encoded = request.Serialize();
-        Debug.Log(encoded);
+        var serialized = request.Serialize();
+        Debug.Log(serialized);
         _onSentRequest?.Invoke(request);
     }
 

@@ -437,7 +437,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _boardHandler:
-    _value: {fileID: 1317748596}
+    _value: {fileID: 1536072817}
   _gameContextBuilder:
     _players:
     - _name: Tim
@@ -2325,7 +2325,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1317748595
 Transform:
   m_ObjectHideFlags: 0
@@ -2354,7 +2354,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _responseTimeSeconds: 2
-  _mockConnected: 0
   _encodedRequestText: {fileID: 1876933024}
   _mockResponse:
     _status: 0
@@ -2538,13 +2537,14 @@ GameObject:
   m_Component:
   - component: {fileID: 1536072816}
   - component: {fileID: 1536072817}
+  - component: {fileID: 1536072818}
   m_Layer: 0
   m_Name: Bluetooth Board Handler
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &1536072816
 Transform:
   m_ObjectHideFlags: 0
@@ -2572,6 +2572,75 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 53a89d37c7a590d40bc354ba35a36ab6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _communicator: {fileID: 1536072818}
+  _onSentRequest:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 1876933026}
+        m_TargetAssemblyTypeName: CentaursBoardGame.ArduinoCommunicationDisplay,
+          Assembly-CSharp
+        m_MethodName: ShowRequest
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+  _onReceivedResponse:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 1876933026}
+        m_TargetAssemblyTypeName: CentaursBoardGame.ArduinoCommunicationDisplay,
+          Assembly-CSharp
+        m_MethodName: ShowResponse
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+  _onTriedToSendRequestWhileNotConnected:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 1876933026}
+        m_TargetAssemblyTypeName: CentaursBoardGame.ArduinoCommunicationDisplay,
+          Assembly-CSharp
+        m_MethodName: ShowNotConnected
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+  _autoReconnectAfterRequestFailure: 1
+--- !u!114 &1536072818
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1536072815}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 81bd374121d6b154c9e44b3303d8f13d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _peripheralData:
+    _serviceUUID: 0000ffe0-0000-1000-8000-00805f9b34fb
+    _characteristicUUID: 0000ffe1-0000-1000-8000-00805f9b34fb
+    _name: HC-08
+  _tryConnectOnAwake: 1
+  _enableReconnectRate: 0
+  _reconnectRateSeconds: 5
 --- !u!1 &1775244127
 GameObject:
   m_ObjectHideFlags: 0
@@ -2938,6 +3007,7 @@ MonoBehaviour:
   _text: {fileID: 1876933024}
   _successfulResponseColor: {r: 1, g: 1, b: 1, a: 1}
   _failedResponseColor: {r: 1, g: 0, b: 0, a: 1}
+  _notConnectedMessage: The board is not connected. Reconnecting...
 --- !u!1 &1921165685
 GameObject:
   m_ObjectHideFlags: 0

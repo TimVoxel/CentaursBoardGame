@@ -10,6 +10,7 @@ namespace CentaursBoardGame
 		[SerializeField] private TextMeshProUGUI _text;
         [SerializeField] private Color _successfulResponseColor;
         [SerializeField] private Color _failedResponseColor;
+        [SerializeField] private string _notConnectedMessage;
 
         public void ShowRequest(IArduinoRequest request)
 		{
@@ -42,15 +43,16 @@ namespace CentaursBoardGame
             _text.text = response.Message;
         }
 
+        public void ShowNotConnected()
+        {
+            gameObject.SetActive(true);
+            _text.color = _failedResponseColor;
+            _text.text = _notConnectedMessage;
+        }
+
 		public void Hide()
 		{
 			gameObject.SetActive(false);
 		}
-
-        private void DisplayArduinoRepsonse(ArduinoResponse response)
-        {
-            
-        }
-
     }
 }

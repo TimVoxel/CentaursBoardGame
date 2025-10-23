@@ -35,6 +35,7 @@ public class BluetoothDeviceScript : MonoBehaviour
 	public Action<string, int> ReadRSSIAction;
 
 	// Use this for initialization
+
 	void Start ()
 	{
 		DiscoveredDeviceList = new List<string> ();

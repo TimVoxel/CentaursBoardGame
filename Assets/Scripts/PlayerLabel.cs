@@ -1,0 +1,24 @@
+using TMPro;
+using UnityEngine;
+
+#nullable enable
+
+namespace CentaursBoardGame
+{
+    public class PlayerLabel : MonoBehaviour
+	{
+		[SerializeField] private TextMeshProUGUI _text;
+		[SerializeField] private string _prefix;
+		[SerializeField] private string _suffix;
+
+		public void DisplayPlayer(Player player)
+		{
+			_text.text = $"{_prefix}{player.Name}{_suffix}";
+		}
+
+		public void ResetText()
+		{
+			_text.text = $"{_prefix}{_suffix}";
+		}
+	}
+}

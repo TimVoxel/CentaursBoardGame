@@ -46,8 +46,6 @@ public class GameContextBuilder
 
 public class GameContext
 {
-       
-
     private readonly HashSet<Player> _finishedPlayers;
         
     public ImmutableArray<Player> Players { get; }
@@ -55,6 +53,8 @@ public class GameContext
     public List<BoardAttack> AttackHistory { get; }
 
     public int FinishedCount => _finishedPlayers.Count;
+
+    public bool AllFinished => Players.Length == _finishedPlayers.Count;
 
     public GameContext(ImmutableArray<Player> players,
                         int boardSectorCount) :

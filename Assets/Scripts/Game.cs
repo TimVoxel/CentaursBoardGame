@@ -24,6 +24,7 @@ public class Game : MonoBehaviour
     private GameContext _context;
     private GameState _state;
 
+    [SerializeField] private UnityEvent<BoardAttack> _onAttacked;
     [SerializeField] private UnityEvent<BoardAttack> _onShowAttack;
     [SerializeField] private UnityEvent _onHideAttack;
 
@@ -61,11 +62,13 @@ public class Game : MonoBehaviour
     private void OnEnable()
     {
         _boardAttackController.OnBoardAttacked += LogBoardAttack;
+        _boardAttackController.OnBoardAttacked += EnterTransitionAnimationState;
     }
 
     private void OnDisable()
     {
         _boardAttackController.OnBoardAttacked -= LogBoardAttack;
+        _boardAttackController.OnBoardAttacked -= EnterTransitionAnimationState;
     }
 
     public void EnterShowAttackState()
@@ -81,12 +84,17 @@ public class Game : MonoBehaviour
         State = GameState.AwaitingPlayerInput;
     }
 
+    private void EnterTransitionAnimationState(BoardAttack attack)
+    {
+        _onAttacked?.Invoke(attack);
+        State = GameState.TransitionAnimation;
+    }
+
     public void TrySendAttackToBoard(BoardAttack attack)
     {
         switch (attack)
         {
             case RotateRingAttack rotateRingAttack:
-
                 var list = new List<BoardRotation>(1) { new BoardRotation(rotateRingAttack.Ring, rotateRingAttack.SectorCount) };
                 BoardHandler.RotateRings(list);
                 break;

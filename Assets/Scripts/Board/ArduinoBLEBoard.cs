@@ -68,7 +68,7 @@ public class ArduinoBLEBoard : MonoBehaviour, IBoardHandler
 
             if (_autoReconnectAfterRequestFailure)
             {
-                _communicator.TryConnect();
+                _communicator.TryReconnect();
             }
         }
     }

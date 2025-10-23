@@ -159,7 +159,7 @@ namespace CentaursBoardGame
                 });
         }
 
-        public void TryConnect(bool enforceAddressSearch = false)
+        private void TryConnect(bool enforceAddressSearch = false)
         {
             Debug.Log($"Trying to connect to {_peripheralData.Name}");
            
@@ -204,6 +204,18 @@ namespace CentaursBoardGame
             );
         }
 
+        public void TryReconnect()
+        {
+            if (_address == null)
+            {
+                SetState(State.Scanning, 2f);
+            }
+            else 
+            {
+                SetState(State.Connecting, 2f);
+            }
+        }
+
         private void OnBLEMessageReceived(string message)
         {
             Debug.Log($"BLE message received from {_address}: \"{message}\"");
@@ -237,14 +249,9 @@ namespace CentaursBoardGame
 
             if (_reconnectTime <= 0f)
             {
-                if (_address == null)
-                {
-                    TryBindAddress();
-                }
-                    
+                TryReconnect();
                 _reconnectTime = _reconnectRateSeconds;
             }
         }
     }
-
 }

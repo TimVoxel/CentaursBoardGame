@@ -1,5 +1,4 @@
 using CentaursBoardGame;
-using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -16,16 +15,6 @@ public class BoardAttackMenu : MonoBehaviour
     private void Awake()
     {
         _confirmPanel.SetActive(false);
-    }
-
-    private void OnEnable()
-    {
-        _game.BoardAttackController.OnBoardAttacked += OnBoardAttacked;
-    }
-
-    private void OnDisable()
-    {
-        _game.BoardAttackController.OnBoardAttacked -= OnBoardAttacked;
     }
 
     public void OnPerformAttackClicked()
@@ -57,11 +46,6 @@ public class BoardAttackMenu : MonoBehaviour
     public void OnAttackConfirmed()
     {
         _game.BoardAttackController.PerformNextAttack();
-    }
-
-    private void OnBoardAttacked(BoardAttack attack)
-    {
-        _onBoardAttacked?.Invoke(attack);
     }
 
     private void ShowArduinoResponseOnDisplay(ArduinoResponse response)

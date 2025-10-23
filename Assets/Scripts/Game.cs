@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -19,19 +20,31 @@ public enum GameState : byte
 
 public class Game : MonoBehaviour
 {
-    [SerializeField] private InterfaceReference<IBoardHandler> _boardHandler;
+    private enum ContextSource
+    {
+        File,
+        Builder,
+        Available,
+    }
+
+    [SerializeField] private ContextSource _contextSource;
+    [SerializeField] private bool _autoSaveOnAppQuit;
     [SerializeField] private GameContextBuilder _gameContextBuilder;
+
+    [Space(20)]
+    [SerializeField] private InterfaceReference<IBoardHandler> _boardHandler;
     [SerializeField] private PlayerMenu _playerMenu;
-
-    private BoardAttackController _boardAttackController;
-    private GameContext _context;
-    private GameState _state;
-
+    
+    [Space(20)]
     [SerializeField] private UnityEvent<BoardAttack>? _onAttacked;
     [SerializeField] private UnityEvent<BoardAttack>? _onShowAttack;
     [SerializeField] private UnityEvent? _onHideAttack;
     [SerializeField] private UnityEvent<Player>? _onPlayerFinished;
     [SerializeField] private UnityEvent _onVictory;
+
+    private BoardAttackController _boardAttackController;
+    private GameContext _context;
+    private GameState _state;
 
     public GameState State
     {
@@ -54,9 +67,16 @@ public class Game : MonoBehaviour
 
     private void Awake()
     {
-        _context = _gameContextBuilder.ToContext();
+        _context = _contextSource switch
+        {
+            ContextSource.File => GameContext.Load() ?? throw new Exception("Unable to load game context from file"),
+            ContextSource.Builder => _gameContextBuilder.ToContext(),
+            ContextSource.Available => GameContext.Load() ?? _gameContextBuilder.ToContext(),
+            _ => throw new Exception($"Unexpected context source: {_contextSource}")
+        };
+        
         _boardAttackController = new BoardAttackController(_context);
-        _playerMenu.BuildFromPlayers(_context.Players);
+        _playerMenu.BuildFromPlayers(_context.UnfinishedPlayers.ToList());
     }
 
     private void Start()
@@ -76,6 +96,14 @@ public class Game : MonoBehaviour
         _boardAttackController.OnBoardAttacked -= LogBoardAttack;
         _boardAttackController.OnBoardAttacked -= EnterTransitionAnimationState;
         _playerMenu.OnCommitedPlayer -= RegisterPlayerFinished;
+    }
+
+    private void OnApplicationQuit()
+    {
+        if (_autoSaveOnAppQuit)
+        {
+            _context.Save();
+        }
     }
 
     public void EnterShowAttackState()

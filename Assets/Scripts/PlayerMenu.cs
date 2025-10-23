@@ -1,5 +1,5 @@
 using System;
-using System.Collections.Immutable;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
@@ -18,7 +18,7 @@ namespace CentaursBoardGame
 		[SerializeField] private UnityEvent? _onShow;
 		[SerializeField] private UnityEvent? _onHide;
 
-        private readonly PlayerMenuEntry?[] _entries = new PlayerMenuEntry[GameFacts.MaxPlayers];
+        private PlayerMenuEntry?[] _entries = new PlayerMenuEntry[GameFacts.MaxPlayers];
 		private bool _isShown;
 
 		private Player? _selectedPlayer;
@@ -56,7 +56,7 @@ namespace CentaursBoardGame
             }
         }
 
-        public void BuildFromPlayers(ImmutableArray<Player> players)
+        public void BuildFromPlayers(IList<Player> players)
 		{
 			var parentTransform = _layoutGroup.transform;
 
@@ -70,7 +70,9 @@ namespace CentaursBoardGame
                 }
             }
 
-            for (var i = 0; i < players.Length; i++)
+			_entries = new PlayerMenuEntry[players.Count];
+
+            for (var i = 0; i < players.Count; i++)
 			{
 				var entry = Instantiate(_prefab, parentTransform);
 				var player = players[i];

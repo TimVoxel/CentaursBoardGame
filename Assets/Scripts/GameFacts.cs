@@ -10,6 +10,7 @@ public static class GameFacts
         BoardRing.Inner
     };
 
+    public const string DefaultContextSaveFileName = "context.txt";
     public const int BoardSectorCount = 24;
     public const int MaxDiscardCardsAmount = 2;
     public const int MaxPlayers = 4;

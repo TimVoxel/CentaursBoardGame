@@ -1,34 +1,52 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.IO;
 using System.Linq;
 using UnityEngine;
 
 #nullable enable
 
-[System.Serializable]
+[Serializable]
 public class GameContextBuilder
 {
     //Helper to create game contexts in the editor
+    //And load them using JsonUtility
 
-    [SerializeField] private Player[] _players = new Player[0];
-    [SerializeField] private int _boardSectorCount = GameFacts.BoardSectorCount;
-    [SerializeField] private List<BoardAttack> _attackHistory = new List<BoardAttack>();
-    [SerializeField] private List<string> _finishedNames = new List<string>();
+    public Player[]? Players = new Player[0];
+    public int BoardSectorCount = GameFacts.BoardSectorCount;
+    public BoardAttack[]? AttackHistory;
+    public string[]? FinishedNames;
+
+    public GameContextBuilder(Player[] players,
+                              int boardSectorCount,
+                              BoardAttack[] attackHistory,
+                              string[] finishedNames)
+    {
+        Players = players;
+        BoardSectorCount = boardSectorCount;
+        AttackHistory = attackHistory;
+        FinishedNames = finishedNames;
+    }
 
     public GameContext ToContext()
     {
-        Debug.Assert(_players != null && _players.Length > 1, "There must be at least 2 players");
-
-        var players = ImmutableArray.CreateRange(_players ?? throw new Exception());
-        var attackHistory = _attackHistory ?? new List<BoardAttack>();
+        Debug.Assert(Players != null && Players.Length > 1, "There must be at least 2 players");
+        
+        var players = ImmutableArray.CreateRange(Players ?? throw new Exception());
         var finishedPlayers = new HashSet<Player>();
+        var attackHistory = new List<BoardAttack>();
 
-        if (_finishedNames != null)
+        if (AttackHistory != null)
         {
-            foreach (var name in _finishedNames)
+            attackHistory.AddRange(AttackHistory);
+        }
+
+        if (FinishedNames != null)
+        {
+            foreach (var name in FinishedNames)
             {
-                var player = _players.FirstOrDefault(p => p.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+                var player = Players.FirstOrDefault(p => p.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
 
                 if (player == null)
                 {
@@ -40,28 +58,31 @@ public class GameContextBuilder
                 }
             }
         }
-        return new GameContext(players, _boardSectorCount, attackHistory, finishedPlayers);
+        return new GameContext(players,
+                               BoardSectorCount,
+                               attackHistory,
+                               finishedPlayers);
     }
 }
 
 public class GameContext
 {
     private readonly HashSet<Player> _finishedPlayers;
-        
     public ImmutableArray<Player> Players { get; }
     public int BoardSectorCount { get; }
     public List<BoardAttack> AttackHistory { get; }
 
     public int FinishedCount => _finishedPlayers.Count;
-
     public bool AllFinished => Players.Length == _finishedPlayers.Count;
+
+    public IEnumerable<Player> UnfinishedPlayers => Players.Except(_finishedPlayers);
 
     public GameContext(ImmutableArray<Player> players,
                         int boardSectorCount) :
         this(players, 
-                boardSectorCount, 
-                new List<BoardAttack>(),
-                new HashSet<Player>()) { }
+            boardSectorCount, 
+            new List<BoardAttack>(),
+            new HashSet<Player>()) { }
 
     public GameContext(ImmutableArray<Player> players,
                         int boardSectorCount,
@@ -85,4 +106,32 @@ public class GameContext
 
     public bool HasFinished(Player player)
         => _finishedPlayers.Contains(player);
+
+    private GameContextBuilder ToBuilder()
+        => new GameContextBuilder(Players.ToArray(),
+                                  BoardSectorCount,
+                                  AttackHistory.ToArray(),
+                                  _finishedPlayers.Select(p => p.Name).ToArray());
+    
+
+    public void Save(string fileName = GameFacts.DefaultContextSaveFileName)
+    {
+        var path = Path.Combine(Application.persistentDataPath, fileName);
+        var builder = ToBuilder();
+        var serialized = JsonUtility.ToJson(builder);
+        File.WriteAllText(path, serialized);
+    }
+
+    public static GameContext? Load(string fileName = GameFacts.DefaultContextSaveFileName)
+    {
+        var path = Path.Combine(Application.persistentDataPath, fileName);
+        
+        if (File.Exists(path))
+        {
+            var text = File.ReadAllText(path);
+            return JsonUtility.FromJson<GameContextBuilder>(text).ToContext();
+        }
+
+        return null;
+    }
 }

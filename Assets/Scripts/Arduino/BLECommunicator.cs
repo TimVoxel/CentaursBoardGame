@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Text;
 using UnityEngine;
 
@@ -47,6 +48,8 @@ namespace CentaursBoardGame
         private State _state;
         private float _timeout;
 
+        private StringBuilder _inputStream = new StringBuilder();
+
         private void Awake()
         {
             if (!_isInitialized)
@@ -76,6 +79,7 @@ namespace CentaursBoardGame
 
         private void SetState(State newState, float timeout)
         {
+            Debug.Log(newState);
             _state = newState;
             _timeout = timeout;
         }
@@ -137,11 +141,13 @@ namespace CentaursBoardGame
                 _address,
                 _peripheralData.ServiceUUID,
                 _peripheralData.CharacteristicUUID,
-                notificationAction: null,
+                notificationAction: (deviceAddress, characteristic) =>
+                {
+                    SetState(State.Connected, 0f);
+                },
                 (deviceAddress, characteristic, data) =>
                 {
-                    OnBLEMessageReceived(data);
-                    SetState(State.Connected, 0f);
+                    OnBLEPacketReceived(data);
                 });
         }
 
@@ -177,8 +183,8 @@ namespace CentaursBoardGame
                     {
                         Debug.Log($"Connected to {address}");
                         OnConnected?.Invoke();
-                        SetState(State.Subscribing, 1f);
-
+                        _address = address;
+                        SetState(State.Subscribing, 3f);
                     }
                 },
                 (address) =>
@@ -224,7 +230,6 @@ namespace CentaursBoardGame
                 }
             );
 
-
             OnScanStarted?.Invoke();
         }
 
@@ -246,8 +251,18 @@ namespace CentaursBoardGame
             OnReceivedData?.Invoke(message);
         }
 
-        private void OnBLEMessageReceived(byte[] data)
-            => OnBLEMessageReceived(Encoding.ASCII.GetString(data));
+        private void OnBLEPacketReceived(byte[] data)
+        {
+            var str = Encoding.ASCII.GetString(data);
+            _inputStream.Append(str);
+
+            if (str.EndsWith('\0'))
+            {
+                var message = _inputStream.ToString().TrimEnd('\0');
+                _inputStream.Clear();
+                OnBLEMessageReceived(message);
+            }
+        }
 
         private void OnApplicationQuit()
         {

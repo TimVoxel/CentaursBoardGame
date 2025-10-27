@@ -1,7 +1,7 @@
 public enum PlayerColor
 {
-    Red,
-    Green,
-    Blue,
-    Yellow
+    Red = 0,
+    Yellow = 1,
+    Green = 2,
+    Blue = 3,
 }

@@ -14,7 +14,7 @@ public class GameContextBuilder
     //And load them using JsonUtility
 
     public Player[]? Players = new Player[0];
-    public int BoardSectorCount = GameFacts.BoardSectorCount;
+    public int BoardSectorCount = GameFacts.DefaultBoardSectorCount;
     public BoardAttack[]? AttackHistory;
     public string[]? FinishedNames;
 

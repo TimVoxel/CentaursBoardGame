@@ -35,6 +35,10 @@ namespace CentaursBoardGame
         private static bool _isInitialized;
         private string? _address;
 
+        public event Action<BluetoothDeviceInfo>? OnFoundDevice;
+        public event Action? OnConnected;
+        public event Action? OnDisconnected;
+        public event Action? OnScanStarted;
         public event Action<string>? OnSentData;
         public event Action<string>? OnReceivedData;
 
@@ -110,7 +114,7 @@ namespace CentaursBoardGame
                     break;
 
                 case State.Connecting:
-                    TryConnect();
+                    TryConnect(_address ?? throw new Exception("Trying to connect with automatically found address without actually finding it"));
                     break;
 
                 case State.Subscribing:
@@ -159,11 +163,12 @@ namespace CentaursBoardGame
                 });
         }
 
-        private void TryConnect(bool enforceAddressSearch = false)
+        public void TryConnect(string targetAddress, bool enforceAddressSearch = false)
         {
             Debug.Log($"Trying to connect to {_peripheralData.Name}");
-           
-            BluetoothLEHardwareInterface.ConnectToPeripheral(_address,
+
+            BluetoothLEHardwareInterface.ConnectToPeripheral(
+                name: targetAddress,
                 connectAction: null,
                 serviceAction: null,
                 (address, serviceUUID, characteristicUUID) =>
@@ -171,7 +176,7 @@ namespace CentaursBoardGame
                     if (serviceUUID == _peripheralData.ServiceUUID && characteristicUUID == _peripheralData.CharacteristicUUID)
                     {
                         Debug.Log($"Connected to {address}");
-                        //_isConnected = true;
+                        OnConnected?.Invoke();
                         SetState(State.Subscribing, 1f);
 
                     }
@@ -179,7 +184,7 @@ namespace CentaursBoardGame
                 (address) =>
                 {
                     Debug.Log($"Disconnected from {address}");
-                    //_isConnected = false;
+                    OnDisconnected?.Invoke();
                     SetState(State.Disconnected, 0f);
                 });
         }
@@ -202,6 +207,25 @@ namespace CentaursBoardGame
                     }
                 }
             );
+
+            OnScanStarted?.Invoke();
+        }
+
+        public void StartScan()
+        {
+            Debug.Log($"Scanning for BLE devices...");
+           
+            BluetoothLEHardwareInterface.ScanForPeripheralsWithServices(
+                serviceUUIDs: null,
+                action: (address, name) =>
+                {
+                    var device = new BluetoothDeviceInfo(name, address);
+                    OnFoundDevice?.Invoke(device);
+                }
+            );
+
+
+            OnScanStarted?.Invoke();
         }
 
         public void TryReconnect()

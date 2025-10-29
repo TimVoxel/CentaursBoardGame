@@ -74,6 +74,20 @@ namespace CentaursBoardGame
         public void TryReconnect()
             => TryConnect(_mockFoundDevices.First().Address);
 
+        public void Disconnect()
+        {
+            if (!IsConnected)
+            {
+                Debug.Log("Not connected, cannot disconnect.");
+                return;
+            }
+            else
+            {
+                IsConnected = false;
+                OnDisconnected?.Invoke();
+            }
+        }
+
         private IEnumerator ReturnMockFoundDevices()
         {
             foreach (var device in _mockFoundDevices)

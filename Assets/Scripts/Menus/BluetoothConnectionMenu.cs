@@ -9,12 +9,18 @@ using UnityEngine.UI;
 
 namespace CentaursBoardGame
 {
+
 	public class BluetoothConnectionMenu : MonoBehaviour
 	{
 		[SerializeField] private InterfaceReference<IBluetoothCommunicator> _handle;
+        [SerializeField] private BluetoothDeviceFilter? _deviceFilter;
+
+        [Space(20)]
 		[SerializeField] private BluetoothDeviceMenuEntry _prefab;
         [SerializeField] private GridLayoutGroup _layoutGroup;
+        [SerializeField] private Toggle _showAllToggle;
 
+        [Space(20)]
         [SerializeField] private UnityEvent<BluetoothDeviceInfo>? _onConnectRequested;
         [SerializeField] private UnityEvent? _onShow;
         [SerializeField] private UnityEvent? _onHide;
@@ -24,6 +30,8 @@ namespace CentaursBoardGame
         private bool _isShown;
 
         private IBluetoothCommunicator? Handle => _handle.Value;
+
+        private bool ShowAllEnabled => _showAllToggle.isOn;
 
         private void Awake()
         {
@@ -77,6 +85,9 @@ namespace CentaursBoardGame
             entry.Bind(info);
             entry.OnConnectRequested += TryConnectToDevice;
             _entries.Add(entry);
+
+            var matches = ShouldShowDevice(info);
+            entry.gameObject.SetActive(matches);
         }
         
         private void DeleteEntry(BluetoothDeviceInfo deviceInfo)
@@ -144,8 +155,55 @@ namespace CentaursBoardGame
             }
         }
 
+        public void Refresh()
+        {
+            var handle = Handle;
+
+            if (handle != null && handle.IsConnected)
+            {
+                return;
+            }
+
+            ClearEntries();
+           
+            if (handle != null)
+            {
+                handle.StartScan();
+            }
+            else
+            {
+                throw new Exception("No bluetooth handle assigned");
+            }
+        }
+
+        public void Disconnect()
+        {
+            var handle = Handle;
+
+            if (handle != null)
+            {
+                handle.Disconnect();
+            }
+            else
+            {
+                throw new Exception("No bluetooth handle assigned");
+            }
+        }
+
+        public void UpdateFilteredEntries()
+        {
+            foreach (var entry in _entries)
+            {
+                var matches = ShouldShowDevice(entry.DeviceInfo);
+                entry.gameObject.SetActive(matches);
+            }
+        }
+
         private void StartScan()
             => _handle.Value?.StartScan();
+
+        private bool ShouldShowDevice(BluetoothDeviceInfo deviceInfo)
+            => ShowAllEnabled || (_deviceFilter?.Matches(deviceInfo) ?? true);
 
         private void TryConnectToDevice(BluetoothDeviceInfo deviceInfo)
         {

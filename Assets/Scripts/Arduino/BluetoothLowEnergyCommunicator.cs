@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using System.Text;
 using UnityEngine;
 
@@ -7,8 +6,7 @@ using UnityEngine;
 
 namespace CentaursBoardGame
 {
-    //TODO: test with arduino circuit
-    public class BLECommunicator : MonoBehaviour, IBluetoothCommunicator
+    public class BluetoothLowEnergyCommunicator : MonoBehaviour, IBluetoothCommunicator
     {
         private enum State
         {
@@ -16,7 +14,8 @@ namespace CentaursBoardGame
             Connected,
             Scanning,
             Connecting,
-            Subscribing
+            Subscribing,
+            Disconnecting,
         }
 
         //"0000ffe0-0000-1000-8000-00805f9b34fb"
@@ -124,6 +123,10 @@ namespace CentaursBoardGame
 
                 case State.Subscribing:
                     TrySubscribe();
+                    break;
+
+                case State.Disconnecting:
+                    TryDisconnect();
                     break;
 
                 default:
@@ -245,6 +248,16 @@ namespace CentaursBoardGame
                 SetState(State.Connecting, 2f);
             }
         }
+        
+        public void Disconnect()
+            => SetState(State.Disconnecting, 1f);
+          
+        private void TryDisconnect()
+            => BluetoothLEHardwareInterface.DisconnectPeripheral(_address, address =>
+            {
+                OnDisconnected?.Invoke();
+                SetState(State.Disconnected, 1f);
+            });
 
         private void OnBLEMessageReceived(string message)
         {

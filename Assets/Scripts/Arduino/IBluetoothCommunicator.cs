@@ -19,6 +19,7 @@ namespace CentaursBoardGame
         public void TryConnect(string address);
         public void TryReconnect();
         public void StartScan();
+        public void Disconnect();
 
         public void SendBluetoothMessage(string message);
     }

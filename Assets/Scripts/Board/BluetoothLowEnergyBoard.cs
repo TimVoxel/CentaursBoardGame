@@ -6,7 +6,7 @@ using UnityEngine.Events;
 
 #nullable enable
 
-public class BLEBoard: MonoBehaviour, IBoardHandler
+public class BluetoothLowEnergyBoard : MonoBehaviour, IBoardHandler
 {
     [SerializeField] private InterfaceReference<IBluetoothCommunicator> _communicator;
 

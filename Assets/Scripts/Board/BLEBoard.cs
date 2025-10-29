@@ -6,9 +6,9 @@ using UnityEngine.Events;
 
 #nullable enable
 
-public class ArduinoBLEBoard : MonoBehaviour, IBoardHandler
+public class BLEBoard: MonoBehaviour, IBoardHandler
 {
-    [SerializeField] private BLECommunicator _communicator;
+    [SerializeField] private InterfaceReference<IBluetoothCommunicator> _communicator;
 
     [SerializeField] private UnityEvent<IArduinoRequest>? _onSentRequest;
     [SerializeField] private UnityEvent<ArduinoResponse>? _onReceivedResponse;
@@ -21,13 +21,19 @@ public class ArduinoBLEBoard : MonoBehaviour, IBoardHandler
 
     private void OnEnable()
     {
-        _communicator.OnReceivedData += OnReceivedData;
+        if (_communicator.Value != null)
+        {
+            _communicator.Value.OnReceivedData += OnReceivedData;
+        }
         OnReceivedResponse += ForwardResponseToUnityEvent;
     }
 
     private void OnDisable()
     {
-        _communicator.OnReceivedData -= OnReceivedData;
+        if (_communicator.Value != null)
+        {
+            _communicator.Value.OnReceivedData -= OnReceivedData;
+        }
         OnReceivedResponse -= ForwardResponseToUnityEvent;
     }
 
@@ -55,10 +61,12 @@ public class ArduinoBLEBoard : MonoBehaviour, IBoardHandler
 
     private void TrySendRequest(IArduinoRequest request)
     {
-        if (_communicator.IsConnected)
+        var communicator = _communicator.Value ?? throw new Exception("No communicator set");
+
+        if (communicator.IsConnected == true)
         {
             var serialized = request.Serialize();
-            _communicator.SendBLEMessage(serialized);
+            communicator.SendBluetoothMessage(serialized);
             _onSentRequest?.Invoke(request);
         }
         else
@@ -68,7 +76,7 @@ public class ArduinoBLEBoard : MonoBehaviour, IBoardHandler
 
             if (_autoReconnectAfterRequestFailure)
             {
-                _communicator.TryReconnect();
+                communicator.TryReconnect();
             }
         }
     }

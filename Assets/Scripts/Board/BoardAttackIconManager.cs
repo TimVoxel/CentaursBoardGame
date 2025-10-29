@@ -73,7 +73,7 @@ public class BoardAttackIconManager : MonoBehaviour
     }
 
     public void ShowExplanation()
-        => StartCoroutine(nameof(TemporarilyShowExplanation));
+        => StartCoroutine(TemporarilyShowExplanation());
         
     public IEnumerator TemporarilyShowExplanation()
     {

@@ -11,7 +11,7 @@ namespace CentaursBoardGame
 {
 	public class BluetoothConnectionMenu : MonoBehaviour
 	{
-		[SerializeField] private BLECommunicator _handle;
+		[SerializeField] private InterfaceReference<IBluetoothCommunicator> _handle;
 		[SerializeField] private BluetoothDeviceMenuEntry _prefab;
         [SerializeField] private GridLayoutGroup _layoutGroup;
 
@@ -23,6 +23,8 @@ namespace CentaursBoardGame
         private List<BluetoothDeviceMenuEntry> _entries = new List<BluetoothDeviceMenuEntry>();
         private bool _isShown;
 
+        private IBluetoothCommunicator? Handle => _handle.Value;
+
         private void Awake()
         {
             _layoutGroupTransform = _layoutGroup.GetComponent<RectTransform>();
@@ -30,8 +32,16 @@ namespace CentaursBoardGame
 
         private void OnEnable()
         {
-            _handle.OnFoundDevice += AddEntry;
-            _handle.OnDisconnected += _handle.StartScan;
+            var handle = Handle;
+            
+            if (handle == null)
+            {
+                Debug.LogError("No bluetooth communicator assigned");
+                return;
+            }
+
+            handle.OnFoundDevice += AddEntry;
+            handle.OnDisconnected += StartScan;
 
             foreach (var entry in _entries)
             {
@@ -41,8 +51,13 @@ namespace CentaursBoardGame
 
         private void OnDisable()
         {
-            _handle.OnFoundDevice -= AddEntry;
-            _handle.OnDisconnected -= _handle.StartScan;
+            var handle = Handle;
+
+            if (handle != null)
+            {
+                handle.OnFoundDevice -= AddEntry;
+                handle.OnDisconnected -= StartScan;
+            }
 
             foreach (var entry in _entries)
             {
@@ -56,7 +71,7 @@ namespace CentaursBoardGame
 
             _layoutGroup.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(
                 RectTransform.Axis.Vertical,
-                _layoutGroup.padding.top + sizePerCell * _entries.Count);
+                _layoutGroup.padding.top + sizePerCell * (_entries.Count + 1));
 
             var entry = Instantiate(_prefab, _layoutGroupTransform);
             entry.Bind(info);
@@ -95,7 +110,20 @@ namespace CentaursBoardGame
             _onShow?.Invoke();
 
             ClearEntries();
-            _handle.StartScan();
+
+            var handle = Handle;
+
+            if (handle != null)
+            {
+                if (!handle.IsConnected)
+                {
+                    handle.StartScan();
+                }
+            }
+            else
+            {
+                throw new Exception("No bluetooth handle assigned");
+            }
         }
 
         public void Hide()
@@ -116,10 +144,20 @@ namespace CentaursBoardGame
             }
         }
 
+        private void StartScan()
+            => _handle.Value?.StartScan();
+
         private void TryConnectToDevice(BluetoothDeviceInfo deviceInfo)
         {
-            _handle.TryConnect(deviceInfo.Address);
-            _onConnectRequested?.Invoke(deviceInfo);
+            if (Handle != null)
+            {
+                Handle.TryConnect(deviceInfo.Address);
+                _onConnectRequested?.Invoke(deviceInfo);        
+            }
+            else
+            {
+                throw new Exception("No bluetooth handle assigned");
+            }   
         }
     }
 }

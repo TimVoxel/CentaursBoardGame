@@ -8,7 +8,7 @@ using UnityEngine;
 namespace CentaursBoardGame
 {
     //TODO: test with arduino circuit
-    public class BLECommunicator : MonoBehaviour
+    public class BLECommunicator : MonoBehaviour, IBluetoothCommunicator
     {
         private enum State
         {
@@ -36,6 +36,7 @@ namespace CentaursBoardGame
         private static bool _isInitialized;
         private string? _address;
 
+        public event Action<string>? StartedConnecting;
         public event Action<BluetoothDeviceInfo>? OnFoundDevice;
         public event Action? OnConnected;
         public event Action? OnDisconnected;
@@ -135,43 +136,10 @@ namespace CentaursBoardGame
             }
         }
 
-        private void TrySubscribe()
-        {
-            BluetoothLEHardwareInterface.SubscribeCharacteristicWithDeviceAddress(
-                _address,
-                _peripheralData.ServiceUUID,
-                _peripheralData.CharacteristicUUID,
-                notificationAction: (deviceAddress, characteristic) =>
-                {
-                    SetState(State.Connected, 0f);
-                },
-                (deviceAddress, characteristic, data) =>
-                {
-                    OnBLEPacketReceived(data);
-                });
-        }
-
-        public void SendBLEMessage(string message)
-        {
-            var bytes = Encoding.ASCII.GetBytes(message);
-
-            BluetoothLEHardwareInterface.WriteCharacteristic(
-                _address, 
-                _peripheralData.ServiceUUID,
-                _peripheralData.CharacteristicUUID,
-                data: bytes, 
-                length: bytes.Length,
-                withResponse: true,
-                action: (characteristic) =>
-                {
-                    Debug.Log("Sent: " + message);
-                    OnSentData?.Invoke(characteristic);
-                });
-        }
-
-        public void TryConnect(string targetAddress, bool enforceAddressSearch = false)
+        public void TryConnect(string targetAddress)
         {
             Debug.Log($"Trying to connect to {_peripheralData.Name}");
+            StartedConnecting?.Invoke(targetAddress);
 
             BluetoothLEHardwareInterface.ConnectToPeripheral(
                 name: targetAddress,
@@ -195,6 +163,55 @@ namespace CentaursBoardGame
                 });
         }
 
+        public void StartScan()
+        {
+            Debug.Log($"Scanning for BLE devices...");
+
+            BluetoothLEHardwareInterface.ScanForPeripheralsWithServices(
+                serviceUUIDs: null,
+                action: (address, name) =>
+                {
+                    var device = new BluetoothDeviceInfo(name, address);
+                    OnFoundDevice?.Invoke(device);
+                }
+            );
+
+            OnScanStarted?.Invoke();
+        }
+
+        private void TrySubscribe()
+        {
+            BluetoothLEHardwareInterface.SubscribeCharacteristicWithDeviceAddress(
+                _address,
+                _peripheralData.ServiceUUID,
+                _peripheralData.CharacteristicUUID,
+                notificationAction: (deviceAddress, characteristic) =>
+                {
+                    SetState(State.Connected, 0f);
+                },
+                (deviceAddress, characteristic, data) =>
+                {
+                    OnBLEPacketReceived(data);
+                });
+        }
+
+        public void SendBluetoothMessage(string message)
+        {
+            var bytes = Encoding.ASCII.GetBytes(message);
+
+            BluetoothLEHardwareInterface.WriteCharacteristic(
+                _address, 
+                _peripheralData.ServiceUUID,
+                _peripheralData.CharacteristicUUID,
+                data: bytes, 
+                length: bytes.Length,
+                withResponse: true,
+                action: (characteristic) =>
+                {
+                    Debug.Log("Sent: " + message);
+                    OnSentData?.Invoke(characteristic);
+                });
+        }
         private void TryBindAddress()
         {
             Debug.Log($"Trying to find address of device {_peripheralData.Name}");
@@ -211,22 +228,6 @@ namespace CentaursBoardGame
                         _address = address;
                         SetState(State.Connecting, 2f);
                     }
-                }
-            );
-
-            OnScanStarted?.Invoke();
-        }
-
-        public void StartScan()
-        {
-            Debug.Log($"Scanning for BLE devices...");
-           
-            BluetoothLEHardwareInterface.ScanForPeripheralsWithServices(
-                serviceUUIDs: null,
-                action: (address, name) =>
-                {
-                    var device = new BluetoothDeviceInfo(name, address);
-                    OnFoundDevice?.Invoke(device);
                 }
             );
 

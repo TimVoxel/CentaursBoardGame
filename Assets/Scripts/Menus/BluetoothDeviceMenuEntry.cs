@@ -4,19 +4,6 @@ using UnityEngine;
 using UnityEngine.UI;
 
 #nullable enable
-
-public class BluetoothDeviceInfo
-{
-	public string Name { get; }
-	public string Address { get; }
-
-	public BluetoothDeviceInfo(string name, string address)
-	{
-		Name = name;
-		Address = address;
-    }
-}
-
 public class BluetoothDeviceMenuEntry : MonoBehaviour
 {
 	[SerializeField] private TextMeshProUGUI _deviceNameText;

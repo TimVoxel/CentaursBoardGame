@@ -10,28 +10,34 @@ public class BoardAttackMenu : MonoBehaviour
     [SerializeField] private GameObject _confirmPanel;
     [SerializeField] private ArduinoCommunicationDisplay _arduinoCommunicationDisplay;
 
-    [SerializeField] private UnityEvent<BoardAttack>? _onBoardAttacked;
+    private bool _isLocked = false;
 
     private void Awake()
     {
         _confirmPanel.SetActive(false);
     }
 
-    public void OnPerformAttackClicked()
+    public void PerformAttack()
     {
-        if (_game.State == GameState.AwaitingPlayerInput)
+        if (!_isLocked && _game.StateKind == GameStateKind.AwaitingPlayerInput)
         {
             ShowConfirmPanel();
         }
     }
 
-    public void OnGoBackClicked()
+    public void GoBack()
     {
-        if (_game.State == GameState.ShowingBoardAttack)
+        if (!_isLocked && _game.StateKind == GameStateKind.ShowingBoardAttack)
         {
-            _game.EnterAwaitingInputState();
+            _game.SwitchState<AwaitingPlayerInputState>();
         }
     }
+
+    public void Lock()
+        => _isLocked = true;
+
+    public void Unlock()
+        => _isLocked = false;
 
     public void ShowConfirmPanel()
     {
@@ -43,13 +49,8 @@ public class BoardAttackMenu : MonoBehaviour
         _confirmPanel.SetActive(false);
     }
 
-    public void OnAttackConfirmed()
+    public void ConfirmAttack()
     {
-        _game.BoardAttackController.PerformNextAttack();
-    }
-
-    private void ShowArduinoResponseOnDisplay(ArduinoResponse response)
-    {
-        _arduinoCommunicationDisplay.ShowResponse(response);
+        _game.SwitchState<ShowAttackState>();
     }
 }

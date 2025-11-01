@@ -17,7 +17,7 @@ namespace CentaursBoardGame
         public bool IsConnected { get; }
 
         public void TryConnect(string address);
-        public void TryReconnect();
+        public void TryFindAndConnect();
         public void StartScan();
         public void Disconnect();
 

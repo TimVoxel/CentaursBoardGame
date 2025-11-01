@@ -71,7 +71,7 @@ namespace CentaursBoardGame
             }
         }
 
-        public void TryReconnect()
+        public void TryFindAndConnect()
             => TryConnect(_mockFoundDevices.First().Address);
 
         public void Disconnect()

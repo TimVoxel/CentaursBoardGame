@@ -8,7 +8,7 @@ namespace CentaursBoardGame
 
         public void OnZoomInAnimationEnded()
         {
-            _game.EnterShowAttackState();
+            _game.NotifyTransitionalAnimationEnded(GameStateKind.ShowingBoardAttack);
         }
     }
 }

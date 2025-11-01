@@ -16,7 +16,6 @@ public static class GameFacts
     public const int DefaultBoardSectorCount = 24;
     public const int MaxDiscardCardsAmount = 2;
     public const int MaxPlayers = 4;
-
     public static BoardRing GetRandomBoardRing()
     {
         var index = UnityEngine.Random.Range(0, BoardRingValues.Length);

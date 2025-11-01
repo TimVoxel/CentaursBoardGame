@@ -237,7 +237,7 @@ namespace CentaursBoardGame
             OnScanStarted?.Invoke();
         }
 
-        public void TryReconnect()
+        public void TryFindAndConnect()
         {
             if (_address == null)
             {
@@ -302,7 +302,7 @@ namespace CentaursBoardGame
 
             if (_reconnectTime <= 0f)
             {
-                TryReconnect();
+                TryFindAndConnect();
                 _reconnectTime = _reconnectRateSeconds;
             }
         }

@@ -1,15 +1,12 @@
 using System;
-using System.Linq;
 
 #nullable enable
 
-[System.Serializable]
+[Serializable]
 public class BoardAttackController
 {
 	private readonly BoardAttackFactory _factory;
 	private readonly GameContext _gameContext;
-
-	public event Action<BoardAttack>? OnBoardAttacked;
 
 	public BoardAttackController(GameContext gameContext)
 	{
@@ -17,10 +14,10 @@ public class BoardAttackController
         _factory = new BoardAttackFactory(gameContext);
     }
 
-	public void PerformNextAttack()
+	public BoardAttack RegisterNewAttack()
 	{
 		var attack = _factory.CreateRandomAttack();
 		_gameContext.AttackHistory.Add(attack);
-		OnBoardAttacked?.Invoke(attack);
+		return attack;
 	}
 }

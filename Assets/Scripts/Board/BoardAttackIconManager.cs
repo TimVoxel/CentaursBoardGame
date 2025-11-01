@@ -59,6 +59,7 @@ public class BoardAttackIconManager : MonoBehaviour
 
     public void Show(BoardAttack attack)
     {
+        _rootPanel.SetActive(true);
         var info = _iconInfos.First(i => i.RepresentedAttackType == attack.Type);
         _image.sprite = info.Sprite;
         _nameText.text = info.Name;

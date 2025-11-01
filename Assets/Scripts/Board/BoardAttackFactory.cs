@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 
 public class BoardAttackFactory
 {
@@ -19,11 +20,13 @@ public class BoardAttackFactory
 
         BoardAttackType attackType;
 
+        var unfinishedCount = _gameContext.UnfinishedPlayers.Count();
+
         do
         {
             attackType = GameFacts.GetRandomBoardAttackType();
         }
-        while (attackType == BoardAttackType.ForceSwapHands && _gameContext.FinishedCount == 1);
+        while (attackType == BoardAttackType.ForceSwapHands && unfinishedCount <= 1);
 
         return attackType switch
         {

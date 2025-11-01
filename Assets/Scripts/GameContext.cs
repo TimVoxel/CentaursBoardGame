@@ -77,6 +77,8 @@ public class GameContext
 
     public IEnumerable<Player> UnfinishedPlayers => Players.Except(_finishedPlayers);
 
+    public BoardAttack LastAttack => AttackHistory.Last();
+
     public GameContext(ImmutableArray<Player> players,
                         int boardSectorCount) :
         this(players, 
@@ -113,11 +115,16 @@ public class GameContext
                                   AttackHistory.ToArray(),
                                   _finishedPlayers.Select(p => p.Name).ToArray());
     
-
-    public void Save(string fileName = GameFacts.DefaultContextSaveFileName)
+    public void Save(string fileName = GameFacts.DefaultContextSaveFileName, bool resetFinished = false)
     {
         var path = Path.Combine(Application.persistentDataPath, fileName);
         var builder = ToBuilder();
+
+        if (resetFinished)
+        {
+            builder.FinishedNames = new string[0];
+        }
+
         var serialized = JsonUtility.ToJson(builder);
         File.WriteAllText(path, serialized);
     }

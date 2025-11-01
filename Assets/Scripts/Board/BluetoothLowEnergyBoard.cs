@@ -19,12 +19,11 @@ public class BluetoothLowEnergyBoard : MonoBehaviour, IBoardHandler
 
     public event Action<ArduinoResponse>? OnReceivedResponse;
 
+    public IBluetoothCommunicator Communicator => _communicator.Value ?? throw new Exception("No communicator set");
+
     private void OnEnable()
     {
-        if (_communicator.Value != null)
-        {
-            _communicator.Value.OnReceivedData += OnReceivedData;
-        }
+        Communicator.OnReceivedData += OnReceivedData;
         OnReceivedResponse += ForwardResponseToUnityEvent;
     }
 
@@ -61,7 +60,7 @@ public class BluetoothLowEnergyBoard : MonoBehaviour, IBoardHandler
 
     private void TrySendRequest(IArduinoRequest request)
     {
-        var communicator = _communicator.Value ?? throw new Exception("No communicator set");
+        var communicator = Communicator;
 
         if (communicator.IsConnected == true)
         {
@@ -76,10 +75,11 @@ public class BluetoothLowEnergyBoard : MonoBehaviour, IBoardHandler
 
             if (_autoReconnectAfterRequestFailure)
             {
-                communicator.TryReconnect();
+                communicator.TryFindAndConnect();
             }
         }
     }
+
     private void ForwardResponseToUnityEvent(ArduinoResponse response)
     {
         _onReceivedResponse?.Invoke(response);

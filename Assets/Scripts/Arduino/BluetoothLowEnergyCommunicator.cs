@@ -1,4 +1,5 @@
 using System;
+using System.Net;
 using System.Text;
 using UnityEngine;
 
@@ -152,8 +153,6 @@ namespace CentaursBoardGame
                 {
                     if (serviceUUID == _peripheralData.ServiceUUID && characteristicUUID == _peripheralData.CharacteristicUUID)
                     {
-                        Debug.Log($"Connected to {address}");
-                        OnConnected?.Invoke();
                         _address = address;
                         SetState(State.Subscribing, 3f);
                     }
@@ -191,6 +190,8 @@ namespace CentaursBoardGame
                 notificationAction: (deviceAddress, characteristic) =>
                 {
                     SetState(State.Connected, 0f);
+                    Debug.Log($"Connected to {deviceAddress}");
+                    OnConnected?.Invoke();
                 },
                 (deviceAddress, characteristic, data) =>
                 {

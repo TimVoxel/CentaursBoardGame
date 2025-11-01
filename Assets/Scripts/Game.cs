@@ -50,8 +50,6 @@ public class ConnectingToBoardState : GameState
     {
         if (_boardHandler is BluetoothLowEnergyBoard bleBoard)
         {
-            Debug.Log("Entering ConnectingToBoard state: attempting to connect to BLE board");
-            
             var communicator = bleBoard.Communicator;
 
             communicator.TryFindAndConnect();
@@ -70,7 +68,15 @@ public class ConnectingToBoardState : GameState
     public override void Exit()
     {
         _panel.SetActive(false);
+
+        if (_boardHandler is BluetoothLowEnergyBoard bleBoard)
+        {
+            bleBoard.Communicator.OnConnected -= SwitchToStartup;
+        }
     }
+
+    private void SwitchToStartup()
+        => _stateSwitcher.SwitchState<StartupState>();
 }
 
 public class StartupState : GameState
@@ -365,7 +371,7 @@ public class Game : MonoBehaviour, IStateSwitcher<GameState>
         }
     }
 
-    public void SwitchState(GameStateKind kind)
+    public void SwitchStateToKind(GameStateKind kind)
     {
         var state = _states.FirstOrDefault(s => s.Kind == kind);
 
@@ -379,6 +385,9 @@ public class Game : MonoBehaviour, IStateSwitcher<GameState>
         }
     }
 
+    public void SkipConnectingAndShuffling()
+        => SwitchState<AwaitingPlayerInputState>();
+    
     public void NotifyTransitionalAnimationEnded(GameStateKind kind)
     {
         if (kind == GameStateKind.ShowingBoardAttack)

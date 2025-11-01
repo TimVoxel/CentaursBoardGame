@@ -126,8 +126,8 @@ public class StartupState : GameState
     private void ShuffleRings()
         => _boardHandler.RotateRings(new BoardRotation[2]
         {
-            new BoardRotation(BoardRing.Inner, RandomSectorCount),
-            new BoardRotation(BoardRing.Middle, RandomSectorCount)
+            new BoardRotation(BoardRing.Inner, RandomSectorCount, isClockwise: true),
+            new BoardRotation(BoardRing.Middle, RandomSectorCount, isClockwise: true)
         });
 }
 
@@ -190,7 +190,7 @@ public class ShowAttackState : GameState
             case RotateRingAttack rotateAttack:
                 _boardHandler.RotateRings(new BoardRotation[]
                 {
-                    new BoardRotation(rotateAttack.Ring, rotateAttack.SectorCount)
+                    new BoardRotation(rotateAttack.Ring, rotateAttack.SectorCount, isClockwise: true)
                 });
                 LockMenuUntilResponse();
                 break;

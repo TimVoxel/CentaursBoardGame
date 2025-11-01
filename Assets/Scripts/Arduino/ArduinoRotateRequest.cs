@@ -25,9 +25,12 @@ public class ArduinoRotateRequest : IArduinoRequest
             for (var i = 0; i < Rotations.Count; i++)
             {
                 var rotation = Rotations[i];
+                var isClockwiseMarker = rotation.IsClockwise
+                    ? '1' 
+                    : '0';
                 var ringIndex = (byte) rotation.Ring;
                 var sectorCount = rotation.SectorCount;
-                stringBuilder.Append($"{ringIndex} {sectorCount}");
+                stringBuilder.Append($"{isClockwiseMarker}{ringIndex} {sectorCount}");
 
                 if (i != Rotations.Count - 1)
                 {

@@ -40,7 +40,10 @@ namespace CentaursBoardGame
                     throw new System.Exception($"Unexpected request type: {request.Type}");
             }
 
-            StartHiding();
+            if (gameObject.activeInHierarchy)
+            {
+                StartHiding();
+            }
 		}
 
 		public void ShowResponse(ArduinoResponse response)
@@ -53,7 +56,11 @@ namespace CentaursBoardGame
                 _ => throw new System.Exception($"Trying to display unexpected response status: {response.Status}")
             };
             _text.text = response.Message;
-            StartHiding();
+
+            if (gameObject.activeInHierarchy)
+            {
+                StartHiding();
+            }
         }
 
         public void ShowNotConnected()

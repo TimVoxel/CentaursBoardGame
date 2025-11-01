@@ -1,39 +1,49 @@
 #define BAUD 9600
 
-#define MOTOR_1_START 2
-#define MOTOR_2_START 9
+#define MOTOR_MIDDLE 0 
+#define MOTOR_INNER 1
+#define MOTOR_MIDDLE_START 2
+#define MOTOR_INNER_START 9
 
 #define MIN_DELAY 2
 #define MAX_STEP 4
 
-#define MOTOR_1 0 
-#define MOTOR_2 1
-#define RING_2 2
-#define RING_3 3
+#define RING_MIDDLE 2
+#define RING_INNER 3
 
 #define SECTOR_COUNT 24
 #define STEPS_PER_ROTATION 2048
 
 #define ROTATE_CODE "r"
 
-uint16_t stepsLeft1 = 0;
-uint16_t stepsLeft2 = 0;
+struct BoardRotation
+{
+  uint16_t stepsLeft;
+  bool isClockwise;
+};
+
+const uint8_t driverGearTeethNumber = 20;
+const uint8_t middleGearTeethNumber = 147;
+const uint8_t innerGearTeethNumber = 100;
+
+const float middleGearFactor = middleGearTeethNumber / ((float) driverGearTeethNumber);
+const float innerGearFactor = innerGearTeethNumber / ((float) driverGearTeethNumber);
+const float stepsPerSector = ((float) STEPS_PER_ROTATION) / ((float) SECTOR_COUNT);
+
+BoardRotation middleRingRotation;
+BoardRotation innerRingRotation;
 
 uint8_t step1 = 0;
 uint8_t step2 = 0;
-uint8_t rotateDelayMillis = max(MIN_DELAY, 2);
 
-enum class State : uint8_t
+uint16_t convertSectorsToStepsInner(uint8_t sectorCount)
 {
-  AwaitingInput,
-  Rotating
-};
+  return stepsPerSector * sectorCount * innerGearFactor;
+}
 
-State state = State::AwaitingInput;
-
-uint16_t convertSectorsToSteps(uint8_t sectorCount)
+uint16_t convertSectorsToStepsMiddle(uint8_t sectorCount)
 {
-  return (STEPS_PER_ROTATION / SECTOR_COUNT) * sectorCount;
+  return stepsPerSector * sectorCount * middleGearFactor;
 }
 
 void setup() {
@@ -46,8 +56,8 @@ void setup() {
 
   for (uint8_t i = 0; i < MAX_STEP; i++)
   {
-    pinMode(MOTOR_1_START + i, OUTPUT);
-    pinMode(MOTOR_2_START + i, OUTPUT);
+    pinMode(MOTOR_MIDDLE_START + i, OUTPUT);
+    pinMode(MOTOR_INNER_START + i, OUTPUT);
   }
 
   pinMode(LED_BUILTIN, OUTPUT);
@@ -57,7 +67,7 @@ void loop()
 {
   handleRequests();
 
-  if (stepsLeft1 > 0 || stepsLeft2 > 0)
+  if (middleRingRotation.stepsLeft > 0 || innerRingRotation.stepsLeft > 0)
   {
     handleRotations();
   }
@@ -79,26 +89,25 @@ void handleRequests()
     } 
 
     String action = input.substring(0, sepIndex);
-    String args = input.substring(sepIndex + 1);
-
-    unsigned int startIndex = 0;
+    unsigned int startIndex = sepIndex + 1;
 
     if (action == ROTATE_CODE) 
     {
       while (true)
       {
-        uint16_t spaceIndex = args.indexOf(' ', startIndex);
-        uint16_t commaIndex = args.indexOf(',', startIndex);
+        uint16_t spaceIndex = input.indexOf(' ', startIndex + 1);
+        uint16_t commaIndex = input.indexOf(',', startIndex + 1);
 
         if (spaceIndex == -1)
         {
           break;
         }
 
-        uint8_t ringIndex = args.substring(startIndex, spaceIndex).toInt();
-        uint8_t sectorCount = args.substring(spaceIndex + 1, commaIndex).toInt();
+        bool isClockwise = input[startIndex] == '1';
+        uint8_t ringIndex = input.substring(startIndex + 1, spaceIndex).toInt();
+        uint8_t sectorCount = input.substring(spaceIndex + 1, commaIndex).toInt();
 
-        startRotatingRing(ringIndex, sectorCount);
+        startRotatingRing(ringIndex, sectorCount, isClockwise);
 
         if (commaIndex != -1)
         {
@@ -118,36 +127,34 @@ void handleRequests()
 
 void handleRotations()
 {
-  if (stepsLeft1 > 0)
+  if (middleRingRotation.stepsLeft > 0)
   {
-    performStep(MOTOR_1, true);
-    stepsLeft1--;
+    performStep(MOTOR_MIDDLE, middleRingRotation.isClockwise);
+    middleRingRotation.stepsLeft--;
   }
       
-  if (stepsLeft2 > 0)
+  if (innerRingRotation.stepsLeft > 0)
   {
-    performStep(MOTOR_2, true);
-    stepsLeft2--;
+    performStep(MOTOR_INNER, innerRingRotation.isClockwise);
+    innerRingRotation.stepsLeft--;
   }
 
-  if (stepsLeft1 <= 0 && stepsLeft2 <= 0)
+  if (middleRingRotation.stepsLeft <= 0 && innerRingRotation.stepsLeft <= 0)
   {
     sendSuccessResponse("Rotated rings successfully");
   }
-  delay(rotateDelayMillis);
+  delay(MIN_DELAY);
 }
 
-void startRotatingRing(uint8_t ring, uint8_t sectorCount) {
-    if (ring == RING_2)
+void startRotatingRing(uint8_t ring, uint8_t sectorCount, bool isClockwise) {
+    if (ring == RING_MIDDLE)
     {
-      stepsLeft1 = convertSectorsToSteps(sectorCount);
+      middleRingRotation = { convertSectorsToStepsMiddle(sectorCount), isClockwise };
     }
-    else if (ring == RING_3)
+    else if (ring == RING_INNER)
     {
-      stepsLeft2 = convertSectorsToSteps(sectorCount);
+      innerRingRotation = { convertSectorsToStepsInner(sectorCount), isClockwise };
     }
-
-    state = State::Rotating;
 }
 
 void sendStepData(uint8_t startPin, uint8_t step)
@@ -167,15 +174,15 @@ void sendStepData(uint8_t startPin, uint8_t step)
 
 void performStep(uint8_t motor, bool clockwise)
 {
-  if (motor == MOTOR_1)
+  if (motor == MOTOR_MIDDLE)
   {
     if (clockwise)
     {
-      sendStepData(MOTOR_1_START, step1);
+      sendStepData(MOTOR_MIDDLE_START, step1);
     }
     else 
     {
-      sendStepData(MOTOR_1_START, MAX_STEP - step1);
+      sendStepData(MOTOR_MIDDLE_START, MAX_STEP - step1);
     }
     
     step1++;
@@ -185,15 +192,15 @@ void performStep(uint8_t motor, bool clockwise)
       step1 = 0;
     }
   }
-  else if (motor == MOTOR_2)
+  else if (motor == MOTOR_INNER)
   {
     if (clockwise)
     {
-      sendStepData(MOTOR_2_START, step2);
+      sendStepData(MOTOR_INNER_START, step2);
     }
     else 
     {
-      sendStepData(MOTOR_2_START, MAX_STEP - step2);
+      sendStepData(MOTOR_INNER_START, MAX_STEP - step2);
     }
     step2++;
 

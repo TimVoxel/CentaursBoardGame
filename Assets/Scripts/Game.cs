@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.SceneManagement;
 
 #nullable enable
 
@@ -53,10 +54,8 @@ public class ConnectingToBoardState : GameState
             var communicator = bleBoard.Communicator;
 
             communicator.TryFindAndConnect();
-            communicator.OnConnected += () =>
-            {
-                _stateSwitcher.SwitchState<StartupState>();
-            };
+            communicator.OnConnected += SwitchToStartup;
+
             _panel.SetActive(true);
         }
         else
@@ -295,6 +294,9 @@ public class Game : MonoBehaviour, IStateSwitcher<GameState>
     [SerializeField] private GameObject _mainPanel;
     [SerializeField] private GameObject _victoryPanel;
 
+    [Space(20)]
+    [SerializeField] private string _menuScene = string.Empty;
+
     private BoardAttackController _boardAttackController;
     private GameContext _context;
 
@@ -449,5 +451,17 @@ public class Game : MonoBehaviour, IStateSwitcher<GameState>
         {
             SwitchState<VictoryState>();
         }        
+    }
+
+    public void PlayAgain()
+        => SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+
+    public void ExitToMenu()
+        => SceneManager.LoadScene(_menuScene);
+
+    public void SaveAndExitToMenu()
+    {
+        _context.Save();
+        ExitToMenu();
     }
 }

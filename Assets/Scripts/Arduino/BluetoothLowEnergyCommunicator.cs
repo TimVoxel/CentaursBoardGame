@@ -168,6 +168,7 @@ namespace CentaursBoardGame
         public void StartScan()
         {
             Debug.Log($"Scanning for BLE devices...");
+            BluetoothLEHardwareInterface.StopScan();
 
             BluetoothLEHardwareInterface.ScanForPeripheralsWithServices(
                 serviceUUIDs: null,
@@ -220,6 +221,8 @@ namespace CentaursBoardGame
         {
             Debug.Log($"Trying to find address of device {_peripheralData.Name}");
 
+            BluetoothLEHardwareInterface.StopScan();
+
             BluetoothLEHardwareInterface.ScanForPeripheralsWithServices(
                 serviceUUIDs: null,
                 action: (address, name) =>
@@ -251,13 +254,13 @@ namespace CentaursBoardGame
         }
         
         public void Disconnect()
-            => SetState(State.Disconnecting, 1f);
+            => SetState(State.Disconnecting, 3f);
           
         private void TryDisconnect()
             => BluetoothLEHardwareInterface.DisconnectPeripheral(_address, address =>
             {
                 OnDisconnected?.Invoke();
-                SetState(State.Disconnected, 1f);
+                SetState(State.Disconnected, 0f);
             });
 
         private void OnBLEMessageReceived(string message)

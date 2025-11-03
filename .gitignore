@@ -81,3 +81,5 @@ Assets/Shatalmic/
 bin/
 bin
 Assets/Plugins/*.dll
+Dev
+Dev/

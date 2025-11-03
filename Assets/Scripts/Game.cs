@@ -16,6 +16,7 @@ public enum GameStateKind : byte
     AwaitingPlayerInput,
     ShowingBoardAttack,
     Victory,
+    ChangingScene,
 }
 
 public abstract class GameState
@@ -53,14 +54,20 @@ public class ConnectingToBoardState : GameState
         {
             var communicator = bleBoard.Communicator;
 
-            communicator.TryFindAndConnect();
-            communicator.OnConnected += SwitchToStartup;
-
-            _panel.SetActive(true);
+            if (!communicator.IsConnected)
+            {
+                communicator.TryFindAndConnect();
+                communicator.OnConnected += SwitchToStartup;
+                _panel.SetActive(true);
+            }
+            else
+            {
+                SwitchToStartup();
+            }
         }
         else
         {
-            _stateSwitcher.SwitchState<StartupState>();
+            SwitchToStartup();
         }
     }
 
@@ -119,7 +126,7 @@ public class StartupState : GameState
         }
 
         _boardHandler.OnReceivedResponse -= EnterAwaitingInput;
-        _stateSwitcher.SwitchState<AwaitingPlayerInputState>();
+        _stateSwitcher.SwitchState<AwaitingPlayerInputState>(isSilent: true);
     }    
 
     private void ShuffleRings()
@@ -132,7 +139,7 @@ public class StartupState : GameState
 
 public interface IStateSwitcher<I>
 {
-    void SwitchState<T>() where T : I;
+    void SwitchState<T>(bool isSilent = false) where T : I;
 }
 
 public class AwaitingPlayerInputState : GameState
@@ -261,6 +268,48 @@ public class VictoryState : GameState
     }
 }
 
+public class ChangingSceneState : GameState
+{
+    private readonly IBoardHandler _board;
+    private readonly Action _callback;
+    private readonly GameObject _panel;
+
+    public override GameStateKind Kind => GameStateKind.ChangingScene;
+
+    public ChangingSceneState(IStateSwitcher<GameState> game, IBoardHandler communicator, Action callback, GameObject panel) : base(game)
+    {
+        _board = communicator;
+        _callback = callback;
+        _panel = panel;
+    }
+
+    public override void Enter()
+    {
+        _panel.SetActive(true);
+
+        if (_board is BluetoothLowEnergyBoard bleBoard && bleBoard.Communicator.IsConnected)
+        {
+            var communicator = bleBoard.Communicator;
+            communicator.Disconnect();
+            communicator.OnDisconnected += _callback;
+        }
+        else
+        {
+            _callback();
+        }
+    }
+
+    public override void Exit()
+    {
+        _panel.SetActive(false);
+
+        if (_board is BluetoothLowEnergyBoard bleBoard)
+        {
+            var communicator = bleBoard.Communicator;
+        }
+    }
+}
+
 public class Game : MonoBehaviour, IStateSwitcher<GameState>
 {
     private enum ContextSource
@@ -293,6 +342,7 @@ public class Game : MonoBehaviour, IStateSwitcher<GameState>
     [SerializeField] private GameObject _startupPanel;
     [SerializeField] private GameObject _mainPanel;
     [SerializeField] private GameObject _victoryPanel;
+    [SerializeField] private GameObject _changingScenePanel;
 
     [Space(20)]
     [SerializeField] private string _menuScene = string.Empty;
@@ -303,17 +353,23 @@ public class Game : MonoBehaviour, IStateSwitcher<GameState>
     private readonly List<GameState> _states = new List<GameState>();
     private GameState? _state;
 
+    private string? _targetScene;
+
     public IBoardHandler BoardHandler => _boardHandler.Value ?? throw new NullReferenceException("The board handler was not assigned in the game script");
     public BoardAttackController BoardAttackController => _boardAttackController;
     public GameContext Context => _context;
     public GameStateKind StateKind => _state?.Kind ?? throw new InvalidOperationException("The game has no current state");
 
+
     private void Awake()
     {
+        AppFPSLimiter.Run();
+
         _connectingPanel.SetActive(false);
         _startupPanel.SetActive(false);
         _mainPanel.SetActive(false);
         _victoryPanel.SetActive(false);
+        _changingScenePanel.SetActive(false);
 
         _context = _contextSource switch
         {
@@ -334,7 +390,8 @@ public class Game : MonoBehaviour, IStateSwitcher<GameState>
             new StartupState(this, boardHandler, _startupPanel, _context),
             new AwaitingPlayerInputState(this, _mainPanel),
             new ShowAttackState(this, boardHandler, _boardAttackMenu, _boardAttackController, _mainPanel),
-            new VictoryState(this, _victoryPanel, _context)
+            new VictoryState(this, _victoryPanel, _context),
+            new ChangingSceneState(this, boardHandler, GotoTargetScene, _changingScenePanel)
         });
     }
 
@@ -359,13 +416,13 @@ public class Game : MonoBehaviour, IStateSwitcher<GameState>
         }
     }
 
-    public void SwitchState<T>() where T : GameState
+    public void SwitchState<T>(bool isSilent = false) where T : GameState
     {
         var state = _states.FirstOrDefault(s => s is T);
 
-        if (state != null)
+        if (state != null && state != _state)
         {
-            SetState(state);
+            SetState(state, isSilent);
         }
         else
         {
@@ -388,7 +445,7 @@ public class Game : MonoBehaviour, IStateSwitcher<GameState>
     }
 
     public void SkipConnectingAndShuffling()
-        => SwitchState<AwaitingPlayerInputState>();
+        => SwitchState<AwaitingPlayerInputState>(isSilent: true);
     
     public void NotifyTransitionalAnimationEnded(GameStateKind kind)
     {
@@ -398,12 +455,16 @@ public class Game : MonoBehaviour, IStateSwitcher<GameState>
         }
     }
 
-    private void SetState(GameState state)
+    private void SetState(GameState state, bool isSilent = false)
     {
         _state?.Exit();
         _state = state;
         _state.Enter();
-        ForwardStateChangeToEvent(state.Kind);
+
+        if (!isSilent)
+        {
+            ForwardStateChangeToEvent(state.Kind);
+        }
     }
 
     private void ForwardStateChangeToEvent(GameStateKind kind)
@@ -454,10 +515,19 @@ public class Game : MonoBehaviour, IStateSwitcher<GameState>
     }
 
     public void PlayAgain()
-        => SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+    {
+        _targetScene = SceneManager.GetActiveScene().name;
+        SwitchState<ChangingSceneState>(isSilent: true);
+    }
 
     public void ExitToMenu()
-        => SceneManager.LoadScene(_menuScene);
+    {
+        _targetScene = _menuScene;
+        SwitchState<ChangingSceneState>(isSilent: true);
+    }
+
+    private void GotoTargetScene()
+        => SceneManager.LoadScene(_targetScene ?? throw new Exception("No target scene was set"));
 
     public void SaveAndExitToMenu()
     {

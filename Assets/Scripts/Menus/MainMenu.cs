@@ -15,7 +15,6 @@ public class MainMenu : MonoBehaviour
     [Space(20)]
     [SerializeField] private GameObject _mainPanel;
     [SerializeField] private GameObject _newGamePanel;
-    [SerializeField] private GameObject _settingsPanel;
 
     [Space(20)]
     [SerializeField] private Player[] _placeholderPlayers;
@@ -24,6 +23,11 @@ public class MainMenu : MonoBehaviour
     
     private void Awake()
     {
+        AppFPSLimiter.Run();
+
+        _mainPanel.SetActive(false);
+        _newGamePanel.SetActive(false);
+
         var context = GameContext.Load();
         _continueButton.SetActive(context != null);
        
@@ -32,9 +36,6 @@ public class MainMenu : MonoBehaviour
             : _placeholderPlayers);
 
         ShowPanel(_mainPanel);
-
-        Debug.Log("AWDKOWAKDLAWKDL");
-        Debug.Log(_mainPanel.name);
     }
 
     public void ShowPanel(GameObject panel)

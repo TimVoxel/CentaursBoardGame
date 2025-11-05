@@ -10,6 +10,7 @@ namespace CentaursBoardGame
 		[SerializeField] private Transform _targetTransform;
 		[SerializeField] private float _multiplier;
         [SerializeField] private float _speedMultiplier;
+        [SerializeField] private bool _xOnly = false;
 
         [SerializeField] private Transform? _startPosProvider;
 
@@ -38,7 +39,12 @@ namespace CentaursBoardGame
                 : _startPos;
 
             var x = startPos.x + sinValue;
-            var y = startPos.y + sinValue;
+            var y = startPos.y;
+
+            if (!_xOnly)
+            {
+                y += sinValue;
+            }
 
             _targetTransform.position = new Vector3(x, y, 0f);
         }

@@ -29,6 +29,10 @@ namespace CentaursBoardGame
         private List<BluetoothDeviceMenuEntry> _entries = new List<BluetoothDeviceMenuEntry>();
         private bool _isShown;
 
+        private BluetoothDeviceMenuEntry? _connectingEntry;
+
+        private bool _isLocked = false;
+
         private IBluetoothCommunicator? Handle => _handle.Value;
 
         private bool ShowAllEnabled => _showAllToggle.isOn;
@@ -48,7 +52,7 @@ namespace CentaursBoardGame
                 return;
             }
 
-            handle.OnFoundDevice += AddEntry;
+            handle.OnFoundDevice += HandleNewDevice;
             handle.OnDisconnected += StartScan;
 
             foreach (var entry in _entries)
@@ -63,13 +67,21 @@ namespace CentaursBoardGame
 
             if (handle != null)
             {
-                handle.OnFoundDevice -= AddEntry;
+                handle.OnFoundDevice -= HandleNewDevice;
                 handle.OnDisconnected -= StartScan;
             }
 
             foreach (var entry in _entries)
             {
                 entry.OnConnectRequested -= TryConnectToDevice;
+            }
+        }
+
+        private void HandleNewDevice(BluetoothDeviceInfo info)
+        {
+            if (_entries.FirstOrDefault(e => e.DeviceInfo.Name == info.Name && e.DeviceInfo.Address == info.Address) == null)
+            {
+                AddEntry(info);
             }
         }
 
@@ -178,17 +190,27 @@ namespace CentaursBoardGame
 
         public void Disconnect()
         {
+            if (_isLocked)
+            {
+                return;
+            }
+
             var handle = Handle;
 
             if (handle != null)
             {
+                Lock();
                 handle.Disconnect();
+                handle.OnDisconnected += Unlock;
             }
             else
             {
                 throw new Exception("No bluetooth handle assigned");
             }
         }
+
+        private void Lock() => _isLocked = true;
+        private void Unlock() => _isLocked = false;
 
         public void UpdateFilteredEntries()
         {
@@ -205,17 +227,39 @@ namespace CentaursBoardGame
         private bool ShouldShowDevice(BluetoothDeviceInfo deviceInfo)
             => ShowAllEnabled || (_deviceFilter?.Matches(deviceInfo) ?? true);
 
-        private void TryConnectToDevice(BluetoothDeviceInfo deviceInfo)
+        private void TryConnectToDevice(BluetoothDeviceMenuEntry entry)
         {
+            if (_isLocked)
+            {
+                return;
+            }
+
             if (Handle != null)
             {
-                Handle.TryConnect(deviceInfo.Address);
-                _onConnectRequested?.Invoke(deviceInfo);        
+                if (!Handle.IsConnected)
+                {
+                    _connectingEntry = entry;
+                    Handle.TryConnect(entry.DeviceInfo.Address);
+                    _onConnectRequested?.Invoke(entry.DeviceInfo);
+                    
+                    _connectingEntry.gameObject.SetActive(false);
+                    Handle.OnDisconnected += EnableConnectingEntry;
+                }
             }
             else
             {
                 throw new Exception("No bluetooth handle assigned");
             }   
+        }
+
+        private void EnableConnectingEntry()
+        {
+            _connectingEntry?.gameObject.SetActive(true);
+
+            if (Handle != null)
+            {
+                Handle.OnDisconnected -= EnableConnectingEntry;
+            }
         }
     }
 }

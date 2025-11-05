@@ -11,7 +11,7 @@ public class BluetoothDeviceMenuEntry : MonoBehaviour
 
 	private BluetoothDeviceInfo? _deviceInfo;
 
-	public event Action<BluetoothDeviceInfo>? OnConnectRequested;
+	public event Action<BluetoothDeviceMenuEntry>? OnConnectRequested;
 
 	public BluetoothDeviceInfo DeviceInfo
 	{
@@ -31,6 +31,6 @@ public class BluetoothDeviceMenuEntry : MonoBehaviour
 
 	public void TryConnect()
 	{
-		OnConnectRequested?.Invoke(DeviceInfo ?? throw new Exception("Device not bound, button should be off"));
+		OnConnectRequested?.Invoke(this);
     }
 }

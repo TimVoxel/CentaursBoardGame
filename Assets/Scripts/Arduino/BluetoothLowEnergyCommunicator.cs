@@ -1,12 +1,58 @@
 using System;
-using System.Net;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using UnityEngine;
 
 #nullable enable
 
 namespace CentaursBoardGame
 {
+    public static class BluetoothAddressCache
+    {
+        private static readonly SemaphoreSlim _fileLock = new SemaphoreSlim(initialCount: 1, maxCount: 1);
+        private static string CacheLocation => Path.Combine(Application.persistentDataPath, "addresses.txt");
+
+        public static IEnumerable<string> Load()
+            => File.Exists(CacheLocation) 
+                ? File.ReadAllText(CacheLocation).Split('\n').Select(s => s.Trim())
+                : Enumerable.Empty<string>();
+    
+        public static void Save(IEnumerable<string> addresses)
+            => File.WriteAllLines(CacheLocation, addresses);
+
+        public static async Task SaveAsync(HashSet<string> addresses)
+        {
+            await _fileLock.WaitAsync();
+
+            try
+            {
+                var location = CacheLocation;
+
+                await using var stream = new FileStream(location,
+                                                        FileMode.Create,
+                                                        FileAccess.Write,
+                                                        FileShare.None,
+                                                        bufferSize: 4096,
+                                                        useAsync: true);
+
+                await using var writer = new StreamWriter(stream);
+
+                foreach (var address in addresses)
+                {
+                    await writer.WriteLineAsync(address);
+                }
+            }
+            finally
+            {
+                _fileLock.Release();
+            }
+        }
+    }
+
     public class BluetoothLowEnergyCommunicator : MonoBehaviour, IBluetoothCommunicator
     {
         private enum State
@@ -34,8 +80,10 @@ namespace CentaursBoardGame
         private float _reconnectTime = 0f;
 
         private static bool _isInitialized;
-        private string? _address;
 
+        private static HashSet<string>? _addresses;
+        private string? _pairedAddress;
+        
         public event Action<string>? StartedConnecting;
         public event Action<BluetoothDeviceInfo>? OnFoundDevice;
         public event Action? OnConnected;
@@ -53,6 +101,11 @@ namespace CentaursBoardGame
 
         private void Awake()
         {
+            if (_addresses == null)
+            {
+                _addresses = BluetoothAddressCache.Load().ToHashSet();
+            }
+
             if (!_isInitialized)
             {
                 BluetoothLEHardwareInterface.Initialize(
@@ -119,7 +172,7 @@ namespace CentaursBoardGame
                     break;
 
                 case State.Connecting:
-                    TryConnect(_address ?? throw new Exception("Trying to connect with automatically found address without actually finding it"));
+                    TryConnect(_pairedAddress ?? throw new Exception("Trying to connect with automatically found address without actually finding it"));
                     break;
 
                 case State.Subscribing:
@@ -153,7 +206,7 @@ namespace CentaursBoardGame
                 {
                     if (serviceUUID == _peripheralData.ServiceUUID && characteristicUUID == _peripheralData.CharacteristicUUID)
                     {
-                        _address = address;
+                        _pairedAddress = address;
                         SetState(State.Subscribing, 3f);
                     }
                 },
@@ -185,7 +238,7 @@ namespace CentaursBoardGame
         private void TrySubscribe()
         {
             BluetoothLEHardwareInterface.SubscribeCharacteristicWithDeviceAddress(
-                _address,
+                _pairedAddress,
                 _peripheralData.ServiceUUID,
                 _peripheralData.CharacteristicUUID,
                 notificationAction: (deviceAddress, characteristic) =>
@@ -205,7 +258,7 @@ namespace CentaursBoardGame
             var bytes = Encoding.ASCII.GetBytes(message);
 
             BluetoothLEHardwareInterface.WriteCharacteristic(
-                _address, 
+                _pairedAddress, 
                 _peripheralData.ServiceUUID,
                 _peripheralData.CharacteristicUUID,
                 data: bytes, 
@@ -220,7 +273,6 @@ namespace CentaursBoardGame
         private void TryBindAddress()
         {
             Debug.Log($"Trying to find address of device {_peripheralData.Name}");
-
             BluetoothLEHardwareInterface.StopScan();
 
             BluetoothLEHardwareInterface.ScanForPeripheralsWithServices(
@@ -232,7 +284,8 @@ namespace CentaursBoardGame
                     if (name.Contains(_peripheralData.Name, StringComparison.OrdinalIgnoreCase))
                     {
                         BluetoothLEHardwareInterface.StopScan();
-                        _address = address;
+                        _pairedAddress = address;
+                        HandleAddress(address);
                         SetState(State.Connecting, 2f);
                     }
                 }
@@ -241,9 +294,22 @@ namespace CentaursBoardGame
             OnScanStarted?.Invoke();
         }
 
+        private void HandleAddress(string address)
+        {
+            if (_addresses?.Contains(address) == false)
+            {
+                Debug.Log($"New address registered: {address}");
+                _addresses.Add(address);
+                _ = CacheAddresses();
+            }
+        }
+
+        private Task CacheAddresses()
+            => BluetoothAddressCache.SaveAsync(_addresses ?? throw new Exception("Unloaded"));
+
         public void TryFindAndConnect()
         {
-            if (_address == null)
+            if (_pairedAddress == null)
             {
                 SetState(State.Scanning, 2f);
             }
@@ -257,7 +323,7 @@ namespace CentaursBoardGame
             => SetState(State.Disconnecting, 3f);
           
         private void TryDisconnect()
-            => BluetoothLEHardwareInterface.DisconnectPeripheral(_address, address =>
+            => BluetoothLEHardwareInterface.DisconnectPeripheral(_pairedAddress, address =>
             {
                 OnDisconnected?.Invoke();
                 SetState(State.Disconnected, 0f);
@@ -265,7 +331,7 @@ namespace CentaursBoardGame
 
         private void OnBLEMessageReceived(string message)
         {
-            Debug.Log($"BLE message received from {_address}: \"{message}\"");
+            Debug.Log($"BLE message received from {_pairedAddress}: \"{message}\"");
             OnReceivedData?.Invoke(message);
         }
 
